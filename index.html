@@ -22,8 +22,7 @@
     <div id="app" class="p-4 md:p-8 max-w-full mx-auto">
         <header class="text-center mb-10">
             <h1 class="text-3xl font-extrabold text-gray-900 text-twm-primary">
-                電信業專業技術提示詞產生器
-            </h1>
+                電信業專業技術提示詞產生器 </h1>
             <p class="text-gray-500 mt-2">五大領域、三大場景與 AI 工具同時呈現</p>
         </header>
 
@@ -44,11 +43,15 @@
                 </div>
 
                 <div id="template-select-wrapper" class="p-6 bg-white rounded-xl shadow-2xl h-fit">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">3. 選擇提示詞範本 (共 10 組)</h2>
-                    <div id="template-select-buttons" class="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-2">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">3. 選擇提示詞範本</h2> <div id="template-select-buttons" class="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-2">
                         </div>
                 </div>
 
+                <div id="template-detail-wrapper" class="p-6 bg-white rounded-xl shadow-2xl h-fit hidden">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">範本詳細內容</h2>
+                    <textarea id="template-detail-output" readonly rows="6" class="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 font-mono text-sm resize-none" placeholder="選定範本後，此處將顯示範本原始內容..."></textarea>
+                </div>
+                
                 <div id="keywords-wrapper" class="p-6 bg-white rounded-xl shadow-2xl h-fit hidden">
                     <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">4. 輸入關鍵字 / 參數</h2>
                     <label for="keywords-input" class="block text-sm font-medium text-gray-700 mb-2">
@@ -104,6 +107,9 @@
             MOBILE_NETWORK: 'Signal', FIXED_NETWORK: 'Cable', INFO_SECURITY: 'ShieldCheck', SOFTWARE_DEV: 'Code', AI_APPLICATIONS: 'Bot',
             DESIGN: 'LayoutDashboard', TROUBLESHOOTING: 'Bug', COMPLAINT: 'UserCheck',
             GEMINI: 'Sparkles', CHATGPT: 'MessageSquare', CLAUDE: 'Feather', PERPLEXITY: 'Search', COPILOT: 'Microsoft', CURSOR: 'Code', NOTEBOOKLM: 'NotebookTabs',
+            AGENT_AUTO: 'Bot',    // New icon for Agent
+            MCP_PARAM: 'Server',   // New icon for MCP
+            OTHER_LLM: 'Wrench',   // New icon for Other LLM
         };
         
         // 擴充至每領域 10 組提示詞範本 (共 50 組)
@@ -136,9 +142,35 @@
             { domainId: 'SOFTWARE_DEV', domainName: '軟體開發 (OSS/BSS)', color: 'bg-teal-500', icon: ICON.SOFTWARE_DEV, scenarios: [{ scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是 Cloud Native 與微服務架構專家。指令：針對 [使用者輸入關鍵字/參數] 系統，設計一個 DevOps Pipeline 規劃，並建議合適的雲端原生技術棧。", inputPlaceholder: "例如：新一代 OSS 故障管理系統" }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是精通 Kubernetes/SDN 故障排除的開發人員。指令：分析 [使用者輸入關鍵字/參數] 程式碼片段或錯誤訊息，判斷程式邏輯錯誤或部署問題的根源。", inputPlaceholder: "例如：Pod 狀態 OOMKilled，錯誤訊息：Memory exceeded" }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是 BSS/CRM 系統專家。指令：根據客服轉來的系統操作客訴 [使用者輸入關鍵字/參數]，分析後端可能涉及的軟體模組與資料查詢路徑。", inputPlaceholder: "例如：客戶無法變更資費方案的系統操作客訴" },
             // 佔位符 (其餘 7 組)
             { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "...", inputPlaceholder: "..." }]},
-            { domainId: 'AI_APPLICATIONS', domainName: 'AI 應用', color: 'bg-purple-500', icon: ICON.AI_APPLICATIONS, scenarios: [{ scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是電信網路分析與機器學習工程師。指令：針對 [使用者輸入關鍵字/參數] 的預測性維護專案，設計數據採集與模型選擇的規劃大綱。", inputPlaceholder: "例如：基地台功率漂移的預測性維護專案" }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是 AI 故障診斷系統維護專家。指令：某 AI 異常偵測模型發出了 [使用者輸入關鍵字/參數] 的告警。判斷是網路問題、數據漂移還是模型誤判。", inputPlaceholder: "例如：AI 告警內容：特定區域 RSRP 數值低於平均 3 個標準差" }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是電信客服 Chatbot 調校與訓練專家。指令：根據對話記錄 [使用者輸入關鍵字/參數]，分析 Chatbot 的理解盲點，並建議新的訓練語料。", inputPlaceholder: "例如：用戶詢問「我的費率可以改嗎」但 Chatbot 回答「現在天氣很好」" },
-            // 佔位符 (其餘 7 組)
-            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "...", inputPlaceholder: "..." }]}
+            { domainId: 'AI_APPLICATIONS', domainName: 'AI 應用', color: 'bg-purple-500', icon: ICON.AI_APPLICATIONS, scenarios: [
+                { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是電信網路分析與機器學習工程師。指令：針對 [使用者輸入關鍵字/參數] 的預測性維護專案，設計數據採集與模型選擇的規劃大綱。", inputPlaceholder: "例如：基地台功率漂移的預測性維護專案" },
+                { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是 AI 故障診斷系統維護專家。指令：某 AI 異常偵測模型發出了 [使用者輸入關鍵字/參數] 的告警。判斷是網路問題、數據漂移還是模型誤判。", inputPlaceholder: "例如：AI 告警內容：特定區域 RSRP 數值低於平均 3 個標準差" },
+                { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是電信客服 Chatbot 調校與訓練專家。指令：根據對話記錄 [使用者輸入關鍵字/參數]，分析 Chatbot 的理解盲點，並建議新的訓練語料。", inputPlaceholder: "例如：用戶詢問「我的費率可以改嗎」但 Chatbot 回答「現在天氣很好」" },
+                // 佔位符 (保留 4 個通用佔位符)
+                { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是 AI 模型佈署專家。指令：評估在 [使用者輸入關鍵字/參數] 環境下，部署即時網路優化 AI 模型的最佳容器化策略，並提供資源配置建議。", inputPlaceholder: "例如：邊緣運算節點 (MEC) 上的模型部署" }, 
+                { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是 AI 數據治理專家。指令：針對 [使用者輸入關鍵字/參數] 的網路數據，設計一個完整的數據標註、清洗與脫敏的流程和工具清單。", inputPlaceholder: "例如：用戶行為分析數據 (CDR) 的數據治理流程" }, 
+                { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是 AI 服務設計師。指令：針對 [使用者輸入關鍵字/參數]，設計一個新的電信 AI 加值服務的商業模式和技術可行性評估大綱。", inputPlaceholder: "例如：基於影像識別的智慧巡檢服務" }, 
+                { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是 AI 模型性能調校專家。指令：分析 [使用者輸入關鍵字/參數] 模型在生產環境的延遲與吞吐量指標，找出性能瓶頸並提出優化方案。", inputPlaceholder: "例如：Chatbot 回覆延遲超過 500ms 的性能報告" }, 
+                // 新增三個獨立 AI 應用範本 (佔位符 8, 9, 10)
+                { 
+                    scenarioId: 'AGENT_AUTO', 
+                    scenarioName: 'Agent 自動化', 
+                    promptTemplate: "角色：你是專精於電信維運 (AIOps) 的 AI Agent 設計師。指令：為 [使用者輸入關鍵字/參數] 任務設計一套可行的 Agent 流程與步驟分解，包含監控觸發與自動修復邏輯。", 
+                    inputPlaceholder: "例如：5G 站點 RSRP 異常漂移的 Agent 自動修復流程" 
+                },
+                { 
+                    scenarioId: 'MCP_PARAM', 
+                    scenarioName: 'MCP Server 參數', 
+                    promptTemplate: "角色：你是資深的電信雲 MCP (Managed Control Platform) 專家。指令：根據 [使用者輸入關鍵字/參數] 資訊，提供 MCP Server 的關鍵配置參數調整建議或疑難排解腳本。", 
+                    inputPlaceholder: "例如：分析 NFVO/VNFM 協同告警，提供 K8S 資源調度參數建議" 
+                },
+                { 
+                    scenarioId: 'OTHER_LLM', 
+                    scenarioName: '其他 LLM 應用', 
+                    promptTemplate: "角色：你是跨領域知識彙整專家。指令：比較 [使用者輸入關鍵字/參數] 這兩種 LLM 模型在電信應用中的優勢、限制與成本考量。", 
+                    inputPlaceholder: "例如：比較 Gemini 與 Llama3 在客服摘要系統中的表現" 
+                }
+            ]}
         ];
 
         const LLM_CONFIG = [
@@ -173,6 +205,11 @@
         const templateSelectWrapper = document.getElementById('template-select-wrapper');
         const templateSelectButtons = document.getElementById('template-select-buttons');
         const promptMetadata = document.getElementById('prompt-metadata');
+
+        // New DOM element references
+        const templateDetailWrapper = document.getElementById('template-detail-wrapper');
+        const templateDetailOutput = document.getElementById('template-detail-output');
+
 
         let selectedDomain = null;
         let selectedScenario = null;
@@ -230,7 +267,7 @@
             renderTemplateSelectButtons(null); // 清空範本列表
 
             scenarioWrapper.classList.remove('hidden');
-            // templateSelectWrapper 不再隱藏
+            templateDetailWrapper.classList.add('hidden'); // Hide template detail
             keywordsWrapper.classList.add('hidden');
             updateResults();
         };
@@ -244,7 +281,11 @@
 
             // 提取唯一的場景
             const uniqueScenarios = Array.from(new Set(selectedDomain.scenarios.map(s => s.scenarioId)))
-                .map(id => ({ id, name: selectedDomain.scenarios.find(s => s.scenarioId === id).scenarioName, icon: ICON[id] }));
+                .map(id => ({ 
+                    id, 
+                    name: selectedDomain.scenarios.find(s => s.scenarioId === id).scenarioName, 
+                    icon: ICON[id] || ICON.DESIGN // 使用自訂 icon 或預設
+                }));
 
             uniqueScenarios.forEach(s => {
                 const isSelected = s.id === (selectedScenario && selectedScenario.scenarioId);
@@ -269,14 +310,17 @@
          * 處理場景選擇
          */
         const handleScenarioSelection = (scenarioId) => {
-            selectedScenario = { scenarioId, scenarioName: selectedDomain.scenarios.find(s => s.scenarioId === scenarioId).scenarioName };
+            selectedScenario = { 
+                scenarioId, 
+                scenarioName: selectedDomain.scenarios.find(s => s.scenarioId === scenarioId).scenarioName 
+            };
             selectedTemplate = null;
             keywordsInput.value = '';
 
             renderScenarioButtons(); 
             renderTemplateSelectButtons(scenarioId);
             
-            // templateSelectWrapper 不再隱藏
+            templateDetailWrapper.classList.add('hidden'); // Hide template detail
             keywordsWrapper.classList.add('hidden');
             updateResults();
         };
@@ -291,10 +335,14 @@
                 ? selectedDomain.scenarios.filter(s => s.scenarioId === scenarioId)
                 : [];
 
-            if (availablePrompts.length === 0) {
-                templateSelectButtons.innerHTML = '<p class="text-gray-500 text-center py-4">請先在上方選擇領域與工作場景。</p>';
+            if (availablePrompts.length === 0 && selectedDomain) {
+                 templateSelectButtons.innerHTML = '<p class="text-gray-500 text-center py-4">請先選擇上方的工作場景。</p>';
+                return;
+            } else if (!selectedDomain) {
+                templateSelectButtons.innerHTML = '<p class="text-gray-500 text-center py-4">請先在左側選擇技術領域。</p>';
                 return;
             }
+
 
             availablePrompts.forEach((template, index) => {
                 const isSelected = selectedTemplate === template;
@@ -312,7 +360,6 @@
                 templateSelectButtons.appendChild(button);
             });
             
-            // templateSelectWrapper 不再隱藏
             lucide.createIcons();
         };
 
@@ -323,6 +370,10 @@
             selectedTemplate = template;
             keywordsInput.value = '';
             
+            // Show and populate the Template Detail area
+            templateDetailWrapper.classList.remove('hidden');
+            templateDetailOutput.value = template.promptTemplate.replace(KEYWORD_PLACEHOLDER, `[${selectedTemplate.inputPlaceholder}]`); 
+
             keywordsWrapper.classList.remove('hidden');
             keywordsInput.placeholder = selectedTemplate.inputPlaceholder;
             inputPlaceholderText.textContent = ` (範例: ${selectedTemplate.inputPlaceholder})`;
@@ -400,8 +451,9 @@
             // 隨時更新 LLM 按鈕狀態 (啟用/禁用)
             renderLLMButtons(basePrompt); 
             
-            if (selectedTemplate && basePrompt) {
-                promptMetadata.textContent = `領域: ${selectedDomain.domainName} | 場景: ${selectedScenario.scenarioName} | 範本: No.${selectedDomain.scenarios.indexOf(selectedTemplate) + 1}`;
+            if (selectedTemplate && selectedDomain && selectedScenario) {
+                // 檢查是否已選擇 template，但不一定要有 basePrompt (即關鍵字可為空)
+                promptMetadata.textContent = `領域: ${selectedDomain.domainName} | 場景: ${selectedScenario.scenarioName} | 範本: ${selectedTemplate.scenarioName}`;
             } else {
                 promptMetadata.textContent = '';
             }
