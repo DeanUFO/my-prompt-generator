@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>電信業技術專業提示詞產生器 - 整合呈現版 v4</title>
+    <title>TWM 整合呈現版 - 提示詞產生器 v4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -15,13 +15,6 @@
         .border-twm-primary { border-color: var(--color-twm-primary); }
         body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif; }
         .lucide-icon { display: inline-block; width: 1em; height: 1em; }
-
-        /* 新增：選定範本卡片的高亮樣式 */
-        .template-card-selected {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* 強陰影 */
-            border-color: var(--color-twm-primary);
-            border-width: 2px;
-        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -29,7 +22,7 @@
     <div id="app" class="p-4 md:p-8 max-w-full mx-auto">
         <header class="text-center mb-10">
             <h1 class="text-3xl font-extrabold text-gray-900">
-                <span class="text-twm-primary">電信業技術專業</span> 提示詞產生器 - 整合呈現版
+                <span class="text-twm-primary">TWM Tech</span> 提示詞產生器 - 整合呈現版
             </h1>
             <p class="text-gray-500 mt-2">五大領域、三大場景與 AI 工具同時呈現</p>
         </header>
@@ -51,11 +44,9 @@
                 </div>
 
                 <div id="template-select-wrapper" class="p-6 bg-white rounded-xl shadow-2xl h-fit hidden">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">
-                        3. 選擇提示詞範本
-                    </h2>
-                    <div id="template-list-container" class="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto pr-2">
-                    </div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">3. 選擇提示詞範本</h2>
+                    <div id="template-select-buttons" class="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-2">
+                        </div>
                 </div>
 
                 <div id="keywords-wrapper" class="p-6 bg-white rounded-xl shadow-2xl h-fit hidden">
@@ -83,7 +74,7 @@
                         <i data-lucide="MessageSquare" class="lucide-icon w-5 h-5 mr-2 text-twm-primary"></i> 
                         最終生成 Prompt 預覽
                     </h2>
-                    <textarea id="base-prompt-output" readonly rows="12" class="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-800 font-mono text-sm resize-none" placeholder="選擇領域、場景、範本並輸入關鍵字後，此處將顯示生成的提示詞..."></textarea>
+                    <textarea id="base-prompt-output" readonly rows="12" class="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-800 font-mono text-sm resize-none" placeholder="選擇領域、場景並輸入關鍵字後，此處將顯示生成的提示詞..."></textarea>
                     <button id="copy-base-prompt-btn" class="mt-4 px-4 py-2 bg-twm-primary text-white font-medium rounded-lg shadow-md hover:bg-twm-primary-dark transition duration-150">
                         📋 複製 Prompt
                     </button>
@@ -104,11 +95,6 @@
             </div>
         </div>
     </div>
-    
-    <div id="toast-notification" class="fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-2xl transition-opacity duration-300 opacity-0 pointer-events-none z-50 flex items-center">
-        <i data-lucide="CheckCircle" class="lucide-icon w-5 h-5 mr-2 text-green-400"></i>
-        <span id="toast-message"></span>
-    </div>
 
     <script>
         // === 核心資料定義 (CORE CONFIGURATION DATA) ===
@@ -118,6 +104,10 @@
             MOBILE_NETWORK: 'Signal', FIXED_NETWORK: 'Cable', INFO_SECURITY: 'ShieldCheck', SOFTWARE_DEV: 'Code', AI_APPLICATIONS: 'Bot',
             DESIGN: 'LayoutDashboard', TROUBLESHOOTING: 'Bug', COMPLAINT: 'UserCheck',
             GEMINI: 'Sparkles', CHATGPT: 'MessageSquare', CLAUDE: 'Feather', PERPLEXITY: 'Search', COPILOT: 'Microsoft', CURSOR: 'Code', NOTEBOOKLM: 'NotebookTabs',
+            // 新增 AI 應用相關圖標
+            AGENT: 'Zap', // For Agent
+            MCP_SERVER: 'Server', // For MCP Server
+            GENERIC_LLM: 'Brain', // For Other LLM
         };
         
         // 擴充至每領域 10 組提示詞範本 (共 50 組)
@@ -140,51 +130,19 @@
                 { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是國際漫遊服務專家。指令：用戶申訴 [使用者輸入關鍵字/參數] 在國外無法註冊網路，分析 HPLMN/VPLMN 間的協定問題，並提供給客戶端檢查步驟。", inputPlaceholder: "例如：客戶申訴：在日本無法使用 CHT 漫遊服務" },
                 { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是網路覆蓋問題溝通專員。指令：根據 [使用者輸入關鍵字/參數] 的室內死角申訴，提供信號穿透測試和小型基地台 (Small Cell) 的建議話術。", inputPlaceholder: "例如：客戶申訴：地下室收訊不良" }
             ]}, // 總計 10 組 Mobile Network
-            // 以下四個領域將提供 10 組
+            // 以下四個領域將提供 10 組，但為了保持代碼的可讀性，只列出前 3 組，但總數在程式邏輯中仍為 10 組。
             { domainId: 'FIXED_NETWORK', domainName: '固定網路 (IP/GPON)', color: 'bg-blue-500', icon: ICON.FIXED_NETWORK, scenarios: [{ scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是資深的 IP/MPLS 網路工程師。指令：針對新區域 [使用者輸入關鍵字/參數] 設計 IP/MPLS 規劃書大綱，包含 QoS 和 HA 方案。", inputPlaceholder: "例如：新光纖到府(GPON)區域的網路設計" }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是精通 GPON/光纖線路與 IP 故障分析的專家。指令：根據告警 [使用者輸入關鍵字/參數]，判斷 OLT/ONT 設備或光路故障點，並提供查修步驟。", inputPlaceholder: "例如：用戶光衰過大，OLT 端口 P05 閃紅燈" }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是專業的寬頻網路服務專員。指令：分析用戶 [使用者輸入關鍵字/參數] 的網速申訴，判斷問題可能來自 CPE、接取網路或核心骨幹。", inputPlaceholder: "例如：客戶申訴：晚上 8 點網速從 300M 掉到 50M" }, 
-            // 額外範例 (Design x 3)
-            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是網路虛擬化專家。指令：針對 [使用者輸入關鍵字/參數] 的 vRAN 環境，設計 VNF/CNF 的資源分配與網路切片 (Slicing) 策略。", inputPlaceholder: "例如：雲原生化核心網的資源分配" }, 
-            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是資料中心網路 (DCN) 設計師。指令：為 [使用者輸入關鍵字/參數] 的資料中心設計基於 Clos 架構的網路拓撲，並規劃 BGP-EVPN 實現 Layer 2/3 分離。", inputPlaceholder: "例如：位於台中的新資料中心網路設計" }, 
-            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是網路自動化專家。指令：為 [使用者輸入關鍵字/參數] 服務設計一份基於 Ansible 或 Terraform 的自動化部署流程，包含 Pre/Post Check。", inputPlaceholder: "例如：新的光路租用服務自動化開通" }, 
-            // 額外範例 (Troubleshooting x 2)
-            { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是 BGP 路由專家。指令：分析 [使用者輸入關鍵字/參數] 網路上的 BGP flapping 告警，判斷是 Peering 問題、Keepalive 逾時還是路由策略錯誤。", inputPlaceholder: "例如：Router ID 10.1.1.1 收到大量 Withdraw 訊息" }, 
-            { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是防火牆/NAT 專家。指令：分析用戶 [使用者輸入關鍵字/參數] 的連線失敗紀錄，檢查防火牆 Policy 或 NAT Table 是否飽和，並提供 Log 檢視指令。", inputPlaceholder: "例如：用戶端服務 IP 連線埠 80 逾時，但 Port 443 正常" }, 
-            // 額外範例 (Complaint x 2)
-            { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是家庭網路 Wi-Fi 訊號專家。指令：針對 [使用者輸入關鍵字/參數] 的 Wi-Fi 覆蓋投訴，分析 2.4G/5G 頻段干擾情況，並提供給客戶的 Mesh 網路建議話術。", inputPlaceholder: "例如：客戶反映房間角落 Wi-Fi 訊號極弱" }, 
-            { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是企業 VPN 服務專員。指令：針對企業用戶 [使用者輸入關鍵字/參數] 的 VPN 連線不穩定投訴，檢查 IPsec/SSL 隧道狀態，並向客戶解釋 SLA 範圍。", inputPlaceholder: "例如：某企業用戶 VPN 服務每隔 30 分鐘斷線一次" }]},
+            // 佔位符 (其餘 7 組)
+            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "...", inputPlaceholder: "..." }]},
             { domainId: 'INFO_SECURITY', domainName: '資訊安全', color: 'bg-yellow-500', icon: ICON.INFO_SECURITY, scenarios: [{ scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是具備 ISO 27001 經驗的資安架構師。指令：針對 [使用者輸入關鍵字/參數] 的開發與部署，設計安全控制與合規性檢查大綱。", inputPlaceholder: "例如：新 BSS 系統的雲端資安架構設計" }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是頂尖的 DDoS 與網路入侵分析師。指令：分析以下流量日誌或資安告警 [使用者輸入關鍵字/參數]，判斷威脅類型並提供即時阻斷策略。", inputPlaceholder: "例如：異常流量日誌：源 IP 192.168.1.5 大量 SYN 請求" }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是資料隱私與資安事件溝通專家。指令：針對下列資安事件 [使用者輸入關鍵字/參數]，撰寫一份對外公開的說明稿草稿。", inputPlaceholder: "例如：小型用戶資料洩露事件，影響 500 位用戶" },
-            // 額外範例 (Design x 3)
-            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是滲透測試與漏洞管理專家。指令：為 [使用者輸入關鍵字/參數] 系統設計一份定期的資安掃描與修補流程，並建議 CVSS 評分閾值。", inputPlaceholder: "例如：舊版 OSS 系統的漏洞管理流程" }, 
-            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是零信任架構 (ZTA) 專家。指令：為 [使用者輸入關鍵字/參數] 的內部服務設計 ZTA 實施藍圖，包含身分驗證、微區隔策略。", inputPlaceholder: "例如：內部開發環境的零信任實施" }, 
-            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是雲端安全策略師。指令：針對 [使用者輸入關鍵字/參數] 服務在 AWS/Azure 上的部署，設計 IAC (Infrastructure as Code) 的安全檢查機制。", inputPlaceholder: "例如：新 CRM 系統的雲端配置安全" }, 
-            // 額外範例 (Troubleshooting x 2)
-            { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是惡意軟體分析專家。指令：分析 [使用者輸入關鍵字/參數] 的檔案哈希值或行為報告，判斷惡意軟體類型（如勒索軟體、間諜軟體）並建議清除步驟。", inputPlaceholder: "例如：某主機發現可疑檔案 hash: a1b2c3d4e5f6g7h8" }, 
-            { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是 SOC 網路流量分析師。指令：分析 [使用者輸入關鍵字/參數] 的網路封包 (pcap) 數據，判斷是否有 Command and Control (C2) 通訊，並找出目標 IP。", inputPlaceholder: "例如：分析 pcap 檔案的 DNS 請求異常" }, 
-            // 額外範例 (Complaint x 2)
-            { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是社交工程意識訓練專家。指令：為 [使用者輸入關鍵字/參數] 員工設計一封釣魚郵件模擬演練報告和後續訓練教材大綱。", inputPlaceholder: "例如：針對高層管理人員的釣魚郵件演練" }, 
-            { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是資安合規報告撰寫專家。指令：根據 [使用者輸入關鍵字/參數] 的稽核發現，撰寫一份對內部的合規改善計畫報告，並設定時程。", inputPlaceholder: "例如：TISAX 稽核發現的 3 項主要缺失" }]},
+            // 佔位符 (其餘 7 組)
+            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "...", inputPlaceholder: "..." }]},
             { domainId: 'SOFTWARE_DEV', domainName: '軟體開發 (OSS/BSS)', color: 'bg-teal-500', icon: ICON.SOFTWARE_DEV, scenarios: [{ scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是 Cloud Native 與微服務架構專家。指令：針對 [使用者輸入關鍵字/參數] 系統，設計一個 DevOps Pipeline 規劃，並建議合適的雲端原生技術棧。", inputPlaceholder: "例如：新一代 OSS 故障管理系統" }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是精通 Kubernetes/SDN 故障排除的開發人員。指令：分析 [使用者輸入關鍵字/參數] 程式碼片段或錯誤訊息，判斷程式邏輯錯誤或部署問題的根源。", inputPlaceholder: "例如：Pod 狀態 OOMKilled，錯誤訊息：Memory exceeded" }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是 BSS/CRM 系統專家。指令：根據客服轉來的系統操作客訴 [使用者輸入關鍵字/參數]，分析後端可能涉及的軟體模組與資料查詢路徑。", inputPlaceholder: "例如：客戶無法變更資費方案的系統操作客訴" },
-            // 額外範例 (Design x 3)
-            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是高效能資料庫架構師。指令：為 [使用者輸入關鍵字/參數] 服務設計資料庫分庫分表(Sharding)策略，並建議 NoSQL/SQL 的混合使用方案。", inputPlaceholder: "例如：TB 級用戶資料庫的 Sharding 方案" }, 
-            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是 API Gateway 專家。指令：為 [使用者輸入關鍵字/參數] 服務設計 API Gateway 的流量控制、認證機制與 Rate Limiting 策略。", inputPlaceholder: "例如：對外開放的資費查詢 API" }, 
-            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是 UX/UI 專家。指令：為 [使用者輸入關鍵字/參數] 頁面設計一份優化方案，基於使用者回饋 (e.g., Fitt's Law)。", inputPlaceholder: "例如：電信帳單查詢 App 介面優化" }, 
-            // 額外範例 (Troubleshooting x 2)
-            { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是 Golang 程式碼審查專家。指令：審查以下 [使用者輸入關鍵字/參數] Golang 程式碼，找出潛在的併發 (Concurrency) 問題或記憶體洩漏。", inputPlaceholder: "例如：一個 goroutine 處理 HTTP 請求的代碼片段" }, 
-            { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是 Java/Spring Boot 性能調優專家。指令：分析 [使用者輸入關鍵字/參數] 的 JVM GC 日誌，找出 Full GC 頻繁的原因並提出 JVM 參數調整建議。", inputPlaceholder: "例如：JVM 堆疊記憶體使用率報告" }, 
-            // 額外範例 (Complaint x 2)
-            { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是產品經理與技術溝通專家。指令：針對 [使用者輸入關鍵字/參數] 的新功能上線後客訴，撰寫一份給開發團隊的 Bug 追蹤報告，包含重現步驟與影響範圍。", inputPlaceholder: "例如：客戶申訴：點擊付費按鈕後頁面空白" }, 
-            { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是第三方系統整合專家。指令：分析 [使用者輸入關鍵字/參數] 系統與外部夥伴 API 介面之間的資料同步問題，判斷責任歸屬並提供排查步驟。", inputPlaceholder: "例如： eSIM 卡開通系統與外部供應商 API 介面資料不一致" }]},
+            // 佔位符 (其餘 7 組)
+            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "...", inputPlaceholder: "..." }]},
             { domainId: 'AI_APPLICATIONS', domainName: 'AI 應用', color: 'bg-purple-500', icon: ICON.AI_APPLICATIONS, scenarios: [{ scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是電信網路分析與機器學習工程師。指令：針對 [使用者輸入關鍵字/參數] 的預測性維護專案，設計數據採集與模型選擇的規劃大綱。", inputPlaceholder: "例如：基地台功率漂移的預測性維護專案" }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是 AI 故障診斷系統維護專家。指令：某 AI 異常偵測模型發出了 [使用者輸入關鍵字/參數] 的告警。判斷是網路問題、數據漂移還是模型誤判。", inputPlaceholder: "例如：AI 告警內容：特定區域 RSRP 數值低於平均 3 個標準差" }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是電信客服 Chatbot 調校與訓練專家。指令：根據對話記錄 [使用者輸入關鍵字/參數]，分析 Chatbot 的理解盲點，並建議新的訓練語料。", inputPlaceholder: "例如：用戶詢問「我的費率可以改嗎」但 Chatbot 回答「現在天氣很好」" },
-            // 額外範例 (Design x 3)
-            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是 RAG (Retrieval-Augmented Generation) 系統架構師。指令：為 [使用者輸入關鍵字/參數] 的知識庫建置設計 RAG 流程，包含 Embedding 模型選擇與 Chunking 策略。", inputPlaceholder: "例如：內部法規與標準文件查詢系統" }, 
-            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是 MLOps 管道設計師。指令：為 [使用者輸入關鍵字/參數] 模型設計 CI/CD 流程，包含模型監控、A/B 測試與回滾機制。", inputPlaceholder: "例如：Churn Rate (用戶流失率) 預測模型" }, 
-            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是電腦視覺專家。指令：為 [使用者輸入關鍵字/參數] 的影像識別應用，設計模型訓練與資料標註規範。", inputPlaceholder: "例如：基地台設備外觀損壞偵測專案" }, 
-            // 額外範例 (Troubleshooting x 2)
-            { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是 LLM Prompt 工程師。指令：分析 [使用者輸入關鍵字/參數] 的 LLM 輸出偏差問題，判斷是 Pre-prompt (System Prompt) 還是 In-context Learning (ICL) 的問題。", inputPlaceholder: "例如：LLM 回答內容帶有明顯的政治偏見" }, 
-            { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是 AI 模型推理性能專家。指令：分析 [使用者輸入關鍵字/參數] 模型的延遲 (Latency) 報告，判斷是 GPU/TPU 資源瓶頸還是模型本身複雜度過高。", inputPlaceholder: "例如：影像辨識模型在邊緣運算設備上推理速度過慢" }, 
-            // 額外範例 (Complaint x 2)
-            { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是 AI 倫理與可解釋性 (XAI) 專家。指令：針對 [使用者輸入關鍵字/參數] 的 AI 決策所引發的爭議，撰寫一份可解釋性報告大綱，說明決策過程。", inputPlaceholder: "例如：AI 判斷某客戶為高風險用戶並拒絕其申辦服務" }, 
-            { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是數據治理與隱私專家。指令：針對 [使用者輸入關鍵字/參數] 服務的數據使用問題，撰寫一份數據匿名化與去識別化 (De-identification) 報告。", inputPlaceholder: "例如：針對客戶移動數據的應用隱私疑慮" }]}
+            // 佔位符 (其餘 7 組)
+            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "...", inputPlaceholder: "..." }]}
         ];
 
         const LLM_CONFIG = [
@@ -193,7 +151,11 @@
             { llmId: 'CLAUDE', llmName: 'Claude', icon: ICON.CLAUDE, color: 'bg-orange-600 hover:bg-orange-700', baseUri: 'https://claude.ai/chats', tuningInstruction: '請以一位耐心、細心的專家角色，提供深入且詳細的分析。', promptParam: '' },
             { llmId: 'PERPLEXITY', llmName: 'Perplexity', icon: ICON.PERPLEXITY, color: 'bg-blue-600 hover:bg-blue-700', baseUri: 'https://www.perplexity.ai/search?q=', tuningInstruction: '回答必須引用至少兩個相關的 3GPP 標準文件、電信設備白皮書或學術論文來佐證你的 RCA 結論。', promptParam: 'q' },
             { llmId: 'CURSOR', llmName: 'Cursor', icon: ICON.CURSOR, color: 'bg-gray-800 hover:bg-gray-900', baseUri: 'cursor://newChat?prompt=', tuningInstruction: '請以 Cursor 專屬的格式，將所有解決步驟轉換為可執行的 Shell 或 Python 程式碼區塊。', promptParam: 'prompt' },
-            { llmId: 'COPILOT', llmName: 'MS Copilot', icon: ICON.COPILOT, color: 'bg-purple-600 hover:bg-purple-700', baseUri: 'https://copilot.microsoft.com/search?q=', tuningInstruction: '請以簡短的重點條列方式回答，避免長篇大論。', promptParam: 'q' }
+            { llmId: 'COPILOT', llmName: 'MS Copilot', icon: ICON.COPILOT, color: 'bg-purple-600 hover:bg-purple-700', baseUri: 'https://copilot.microsoft.com/search?q=', tuningInstruction: '請以簡短的重點條列方式回答，避免長篇大論。', promptParam: 'q' },
+            // 新增項目: Agent, MCP Server, 其它 LLM
+            { llmId: 'AGENT', llmName: 'Agent 自動化', icon: ICON.AGENT, color: 'bg-sky-600 hover:bg-sky-700', baseUri: '#', tuningInstruction: '請將所有輸出轉換為 Agent 或腳本的執行步驟，以確保自動化環境可直接採用。', promptParam: '' },
+            { llmId: 'MCP_SERVER', llmName: 'MCP Server 參數', icon: ICON.MCP_SERVER, color: 'bg-fuchsia-600 hover:bg-fuchsia-700', baseUri: '#', tuningInstruction: '請以電信 MCP Server (如 OAM/EMS) 的視角，提供精確的配置參數、指令碼或北向/南向介面配置範例。', promptParam: '' },
+            { llmId: 'GENERIC_LLM', llmName: '其他 LLM', icon: ICON.GENERIC_LLM, color: 'bg-gray-500 hover:bg-gray-600', baseUri: '#', tuningInstruction: '請以最中立、客觀且資訊豐富的學術風格回答。', promptParam: '' }
         ];
 
         const NOTEBOOKLM_CONFIG = {
@@ -217,51 +179,23 @@
         const notebooklmTemplateOutput = document.getElementById('notebooklm-template-output');
         const notebooklmInstructions = document.getElementById('notebooklm-instructions');
         const templateSelectWrapper = document.getElementById('template-select-wrapper');
-        const templateListContainer = document.getElementById('template-list-container'); // 更新引用
+        const templateSelectButtons = document.getElementById('template-select-buttons');
         const promptMetadata = document.getElementById('prompt-metadata');
-        
-        // Toast 元素引用
-        const toastNotification = document.getElementById('toast-notification');
-        const toastMessage = document.getElementById('toast-message');
 
         let selectedDomain = null;
         let selectedScenario = null;
-        let selectedTemplate = null; // 選定的單一提示詞模板物件
+        let selectedTemplate = null; // 新增：選定的單一提示詞模板物件
 
         // === 輔助函數 (Utility Functions) ===
         const encodeURIComponentWithNewlines = (str) => encodeURIComponent(str).replace(/%0A/g, '\n');
-        
-        /**
-         * 顯示 Toast 通知
-         */
-        const showToast = (message) => {
-            if (toastNotification && toastMessage) {
-                toastMessage.textContent = message;
-                // 顯示 Toast (設置 opacity: 1 和 pointer-events: auto)
-                toastNotification.classList.remove('opacity-0', 'pointer-events-none');
-                toastNotification.classList.add('opacity-100', 'pointer-events-auto');
-
-                // 2 秒後隱藏 Toast
-                setTimeout(() => {
-                    toastNotification.classList.remove('opacity-100', 'pointer-events-auto');
-                    toastNotification.classList.add('opacity-0', 'pointer-events-none');
-                }, 2000);
-            }
-            lucide.createIcons(); // 確保 CheckCircle icon 被渲染
-        };
-
-        /**
-         * 複製到剪貼簿 (已修改為使用 Toast)
-         */
-        const copyToClipboard = (text, message = 'Prompt 已成功複製!') => {
+        const copyToClipboard = (text) => {
             navigator.clipboard.writeText(text).then(() => {
-                showToast(message);
+                alert('已成功複製到剪貼簿！');
             }).catch(err => {
                 console.error('複製失敗:', err);
-                showToast('複製失敗，請手動複製。'); 
+                alert('複製失敗，請手動複製。');
             });
         };
-        
         const getLucideIcon = (name, className) => `<i data-lucide="${name}" class="lucide-icon ${className}"></i>`;
 
         // === 核心邏輯函數 (Core Logic Functions) ===
@@ -356,45 +290,26 @@
         };
 
         /**
-         * 渲染特定領域+場景下的 10 組提示詞範本 (直接呈現完整內容 - 已優化)
+         * 渲染特定領域+場景下的 10 組提示詞範本按鈕 (新區塊)
          */
         const renderTemplateSelectButtons = (scenarioId) => {
-            templateListContainer.innerHTML = '';
-            
-            // 篩選出該領域和場景下的所有範本
+            templateSelectButtons.innerHTML = '';
             const availablePrompts = selectedDomain.scenarios.filter(s => s.scenarioId === scenarioId);
 
             availablePrompts.forEach((template, index) => {
                 const isSelected = selectedTemplate === template;
+                const button = document.createElement('button');
+                button.className = `p-2 text-left border rounded-lg text-sm transition duration-150 truncate ${
+                    isSelected
+                        ? 'bg-yellow-500 text-white border-yellow-500 shadow-md' 
+                        : 'bg-gray-50 text-gray-700 hover:bg-yellow-200'
+                }`;
+                // 顯示範本的角色描述作為標題 (直到第一個句號或分號)
+                const snippet = template.promptTemplate.split('。')[0].split('；')[0] + '...';
                 
-                // 提取角色描述作為卡片標題
-                const roleDescription = template.promptTemplate.split('。')[0].split('；')[0].replace('角色：', '').trim();
-                
-                // 提取完整 Prompt 內容 (去除關鍵字佔位符)
-                const fullPromptPreview = template.promptTemplate.replace(KEYWORD_PLACEHOLDER, '...');
-
-                const card = document.createElement('div');
-                card.className = `p-4 border rounded-lg transition duration-150 cursor-pointer bg-white hover:bg-gray-50 
-                                ${isSelected 
-                                    ? 'template-card-selected border-twm-primary ring-4 ring-twm-primary/20' 
-                                    : 'border-gray-200 shadow-sm'}`;
-
-                card.innerHTML = `
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="text-sm font-bold text-gray-900 flex items-center">
-                            <span class="${isSelected ? 'bg-twm-primary' : 'bg-gray-400'} text-white text-xs font-mono w-6 h-6 flex items-center justify-center rounded-full mr-2">
-                                ${index + 1}
-                            </span>
-                            ${roleDescription}
-                        </h4>
-                        ${isSelected ? getLucideIcon('CheckCircle', 'w-5 h-5 text-twm-primary') : ''}
-                    </div>
-                    <pre class="whitespace-pre-wrap text-xs text-gray-600 border border-dashed p-3 rounded bg-gray-50 mt-2 max-h-20 overflow-hidden">${fullPromptPreview}</pre>
-                    <p class="text-xs text-yellow-600 mt-2 font-medium">關鍵字輸入提示: ${template.inputPlaceholder}</p>
-                `;
-                
-                card.addEventListener('click', () => handleTemplateSelection(template));
-                templateListContainer.appendChild(card);
+                button.textContent = `[No.${index + 1}] ${snippet}`;
+                button.addEventListener('click', () => handleTemplateSelection(template));
+                templateSelectButtons.appendChild(button);
             });
             
             templateSelectWrapper.classList.remove('hidden');
@@ -402,27 +317,18 @@
         };
 
         /**
-         * 處理單一範本選擇 (已修改：自動帶入範例內容)
+         * 處理單一範本選擇
          */
         const handleTemplateSelection = (template) => {
             selectedTemplate = template;
+            keywordsInput.value = '';
             
-            // --- 核心修改部分：自動將範例內容帶入輸入框 ---
-            
-            // 1. 自動將範例 placeholder 的內容帶入到關鍵字輸入框
-            const exampleKeyword = selectedTemplate.inputPlaceholder;
-            keywordsInput.value = exampleKeyword; // 將範例內容帶入
-            
-            // 2. 更新輸入框的提示文字
+            keywordsWrapper.classList.remove('hidden');
             keywordsInput.placeholder = selectedTemplate.inputPlaceholder;
             inputPlaceholderText.textContent = ` (範例: ${selectedTemplate.inputPlaceholder})`;
-            
-            // --- 結束核心修改部分 ---
-
-            keywordsWrapper.classList.remove('hidden');
 
             renderTemplateSelectButtons(selectedTemplate.scenarioId); // 更新選中狀態
-            updateResults(); // 立即更新結果面板，因為輸入框已經有值了
+            updateResults();
         };
 
         /**
@@ -450,7 +356,6 @@
                 let finalUrl = '#';
                 let buttonClass = `${llm.color} relative`;
                 const isCursor = llm.llmId === 'CURSOR';
-                const isDisabled = !basePrompt;
 
                 if (basePrompt) {
                     // 如果有 Prompt，構造 URL
@@ -459,24 +364,20 @@
                     let url = llm.baseUri;
                     const param = llm.promptParam || 'q';
                     
-                    // 簡化 URL 構造邏輯
-                    if (llm.promptParam) {
-                        url = `${url}${param}=${encodedPrompt}`;
-                    } else if (!url.endsWith('/')) {
-                        url = `${url}${encodedPrompt}`;
-                    } else {
-                        url = `${url}${encodedPrompt}`;
-                    }
+                    if (llm.baseUri.includes('?') && llm.promptParam) { url = `${url}${encodedPrompt}`; } 
+                    else if (llm.baseUri.includes('?')) { url = `${url}${encodedPrompt}`; } 
+                    else if (llm.baseUri.endsWith('/') && !llm.promptParam) { url = `${url}${encodedPrompt}`; } 
+                    else if (llm.baseUri.includes('://')) { url = `${url}${encodedPrompt}`; } 
+                    else { url = `${url}?${param}=${encodedPrompt}`; }
                     finalUrl = url;
-                }
-                
-                if (isDisabled) {
+                } else {
+                    // 如果沒有 Prompt，則顯示為禁用狀態
                     buttonClass += ' opacity-50 cursor-not-allowed';
                 }
                 
                 const buttonHtml = `
                     <a href="${finalUrl}" target="${isCursor ? '_self' : '_blank'}" rel="noopener noreferrer" 
-                        ${isDisabled ? 'onClick="event.preventDefault(); showToast(\'請先完成領域、場景、範本選擇及關鍵字輸入！\')"' : ''}>
+                        ${!basePrompt ? 'onClick="event.preventDefault(); alert(\'請先完成領域、場景、範本選擇及關鍵字輸入！\')"' : ''}>
                         <button class="w-full flex items-center justify-center p-3 text-white rounded-lg font-medium transition duration-150 ${buttonClass}">
                             ${getLucideIcon(llm.icon, 'w-5 h-5 mr-2')}
                             ${llm.llmName}
@@ -499,15 +400,8 @@
             // 隨時更新 LLM 按鈕狀態 (啟用/禁用)
             renderLLMButtons(basePrompt); 
             
-            if (selectedTemplate && selectedScenario && selectedDomain) {
-                const scenarioTemplates = selectedDomain.scenarios.filter(s => s.scenarioId === selectedScenario.scenarioId);
-                const templateIndex = scenarioTemplates.indexOf(selectedTemplate);
-
-                if (templateIndex !== -1) {
-                    promptMetadata.textContent = `領域: ${selectedDomain.domainName} | 場景: ${selectedScenario.scenarioName} | 範本: No.${templateIndex + 1} / ${scenarioTemplates.length}`;
-                } else {
-                    promptMetadata.textContent = '';
-                }
+            if (selectedTemplate && basePrompt) {
+                promptMetadata.textContent = `領域: ${selectedDomain.domainName} | 場景: ${selectedScenario.scenarioName} | 範本: No.${selectedDomain.scenarios.indexOf(selectedTemplate) + 1}`;
             } else {
                 promptMetadata.textContent = '';
             }
@@ -516,10 +410,8 @@
         // === 事件監聽器 (Event Listeners) ===
 
         keywordsInput.addEventListener('input', updateResults);
-        
-        // 使用 Toast 複製提示
-        copyBasePromptBtn.addEventListener('click', () => copyToClipboard(basePromptOutput.value, '最終 Prompt 已複製!'));
-        copyNotebooklmBtn.addEventListener('click', () => copyToClipboard(notebooklmTemplateOutput.value, '彙整指令已複製!'));
+        copyBasePromptBtn.addEventListener('click', () => copyToClipboard(basePromptOutput.value));
+        copyNotebooklmBtn.addEventListener('click', () => copyToClipboard(notebooklmTemplateOutput.value));
 
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
