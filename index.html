@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>電信業專業技術提示詞產生器 v3.1</title>
+    <title>電信業專業技術提示詞產生器 v3.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -108,7 +108,7 @@
         
         const ICON = {
             MOBILE_NETWORK: 'Signal', FIXED_NETWORK: 'Cable', INFO_SECURITY: 'ShieldCheck', SOFTWARE_DEV: 'Code', AI_APPLICATIONS: 'Bot',
-            DATA_CENTER: 'Server', // 新增機房領域圖示
+            DATA_CENTER: 'Server', 
             DESIGN: 'LayoutDashboard', TROUBLESHOOTING: 'Bug', COMPLAINT: 'UserCheck',
             GEMINI: 'Sparkles', CHATGPT: 'MessageSquare', CLAUDE: 'Feather', PERPLEXITY: 'Search', COPILOT: 'Microsoft', CURSOR: 'Code', NOTEBOOKLM: 'NotebookTabs',
             AGENT_AUTO: 'Bot',   
@@ -116,7 +116,7 @@
             OTHER_LLM: 'Wrench', 
         };
         
-        // 擴充至六大領域，並新增機房/資料中心領域
+        // 領域配置保持不變
         const PROMPT_CONFIG = [
             { domainId: 'MOBILE_NETWORK', domainName: '行動網路 (5G/4G)', color: 'bg-red-500', icon: ICON.MOBILE_NETWORK, scenarios: [
                 { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是資深的 5G SA 網路架構師。指令：提供一份包含技術考量、關鍵參數與實施步驟的網路架構規劃大綱。關鍵輸入：規劃地區為 [使用者輸入關鍵字/參數]，核心技術採用 SA/NSA 模式。", inputPlaceholder: "例如：桃園高鐵站週邊高密度覆蓋需求" },
@@ -151,7 +151,6 @@
                 { scenarioId: 'MCP_PARAM', scenarioName: 'MCP Server 參數', promptTemplate: "角色：你是資深的電信雲 MCP (Managed Control Platform) 專家。指令：根據 [使用者輸入關鍵字/參數] 資訊，提供 MCP Server 的關鍵配置參數調整建議或疑難排解腳本。", inputPlaceholder: "例如：分析 NFVO/VNFM 協同告警，提供 K8S 資源調度參數建議" },
                 { scenarioId: 'OTHER_LLM', scenarioName: '其他 LLM 應用', promptTemplate: "角色：你是跨領域知識彙整專家。指令：比較 [使用者輸入關鍵字/參數] 這兩種 LLM 模型在電信應用中的優勢、限制與成本考量。", inputPlaceholder: "例如：比較 Gemini 與 Llama3 在客服摘要系統中的表現" }
             ]},
-            // === 新增領域：機房/資料中心 ===
             { domainId: 'DATA_CENTER', domainName: '機房/資料中心 (DC/IDC)', color: 'bg-gray-700', icon: ICON.DATA_CENTER, scenarios: [
                 { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是資深的機房基礎設施專家。指令：針對 [使用者輸入關鍵字/參數] 設計 UPS 和 HVAC 的 N+1 備援架構及維護計畫大綱。", inputPlaceholder: "例如：總負載 500kW，目標 PUE 1.3 的新機房" },
                 { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是資料中心運維專家。指令：分析以下 [使用者輸入關鍵字/參數] 告警日誌，判斷是機櫃氣流、空調或伺服器負載問題，並提供緊急處理步驟。", inputPlaceholder: "例如：機櫃溫度感測器 T05 連續三小時超過 35°C" },
@@ -209,7 +208,9 @@
         let selectedTemplate = null; 
 
         // === 輔助函數 (Utility Functions) ===
+        // 修正編碼函數：確保換行符號被保留
         const encodeURIComponentWithNewlines = (str) => encodeURIComponent(str).replace(/%0A/g, '\n');
+        
         const copyToClipboard = (text) => {
             navigator.clipboard.writeText(text).then(() => {
                 alert('已成功複製到剪貼簿！');
@@ -386,7 +387,7 @@
         };
         
         /**
-         * 構造 LLM 啟動按鈕
+         * 構造 LLM 啟動按鈕 (已修正 Gemini/Perplexity 連結問題)
          */
         const renderLLMButtons = (basePrompt = '') => {
             llmButtonsContainer.innerHTML = '';
@@ -395,29 +396,29 @@
                 let finalUrl = '#';
                 let buttonClass = `${llm.color} relative`;
 
-                // *** 關鍵修正：只要 selectedTemplate 存在，就啟用按鈕 (isPromptComplete = true) ***
+                // 只要 selectedTemplate 存在，就啟用按鈕
                 const isPromptComplete = selectedTemplate !== null; 
                 
                 if (isPromptComplete) {
-                    // 使用 basePrompt (即 keywordsInput 的內容) 構造 URL
                     const tunedPrompt = `${llm.tuningInstruction}\n\n--- CORE TASK ---\n${basePrompt}`;
-                    const encodedPrompt = encodeURIComponentWithNewlines(tunedPrompt);
-                    let url = llm.baseUri;
-                    const param = llm.promptParam || 'q';
+                    // 注意：這裡使用 encodeURIComponentWithNewlines 確保換行被保留
+                    const encodedPrompt = encodeURIComponentWithNewlines(tunedPrompt); 
                     
-                    if (llm.llmId === 'CLAUDE' || llm.llmId === 'GEMINI') {
-                        // For models that often don't support direct URL query params for full prompt in all cases
-                        finalUrl = '#'; // User must copy.
-                    } else if (llm.baseUri.includes('?') && llm.promptParam) { 
-                        url = `${url}&${param}=${encodedPrompt}`; 
-                        finalUrl = url;
-                    } else if (llm.promptParam) {
-                         url = `${url}?${param}=${encodedPrompt}`;
-                         finalUrl = url;
-                    } else if (llm.baseUri.includes('://')) { 
-                         finalUrl = `${url}${encodedPrompt}`;
+                    if (llm.llmId === 'CLAUDE') {
+                        // Claude does not reliably support URL prompt passing; requires manual copy.
+                        finalUrl = '#'; 
+                    } else if (llm.llmId === 'GEMINI') {
+                        // FIX: Use the standard 'q' parameter for prompt.
+                        finalUrl = `https://gemini.google.com/app/prompt/?q=${encodedPrompt}`;
+                    } else if (llm.llmId === 'PERPLEXITY' || llm.llmId === 'CHATGPT' || llm.llmId === 'COPILOT') {
+                        // FIX: Perplexity and others that use 'baseUri?q=' are now correctly handled by appending prompt to baseUri.
+                        finalUrl = `${llm.baseUri}${encodedPrompt}`;
+                    } else if (llm.llmId === 'CURSOR') {
+                        // Cursor uses a special protocol link structure
+                        finalUrl = `${llm.baseUri}${encodedPrompt}`;
                     } else {
-                         finalUrl = `${url}${encodedPrompt}`;
+                        // Fallback, keep as manual copy
+                        finalUrl = '#';
                     }
                 } else {
                     // If no template selected, buttons are disabled
@@ -450,7 +451,6 @@
             
             if (selectedTemplate && selectedDomain && selectedScenario) {
                 const availablePrompts = selectedDomain.scenarios.filter(s => s.scenarioId === selectedScenario.scenarioId);
-                // 修正：使用 filter 後的陣列索引來計算編號
                 const templateIndex = availablePrompts.findIndex(t => t === selectedTemplate) + 1; 
 
                 promptMetadata.textContent = `領域: ${selectedDomain.domainName} | 場景: ${selectedScenario.scenarioName} | 範本: No.${templateIndex}`;
@@ -468,7 +468,7 @@
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
             renderDomainCards();
-            renderLLMButtons(); // 初始時渲染禁用狀態按鈕
+            renderLLMButtons(); 
             renderTemplateSelectButtons(null); 
 
             // 填充 NotebookLM 區塊
