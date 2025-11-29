@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>電信業專業技術提示詞產生器 v3</title>
+    <title>電信業專業技術提示詞產生器 v3.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -24,7 +24,7 @@
             <h1 class="text-3xl font-extrabold text-gray-900 text-twm-primary">
                 電信業專業技術提示詞產生器
             </h1>
-            <p class="text-gray-500 mt-2">五大領域、三大場景與 AI 工具同時呈現</p>
+            <p class="text-gray-500 mt-2">六大領域、三大場景與 AI 工具同時呈現</p>
         </header>
 
         <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-10 gap-6">
@@ -105,18 +105,18 @@
     <script>
         // === 核心資料定義 (CORE CONFIGURATION DATA) ===
         const KEYWORD_PLACEHOLDER = "[使用者輸入關鍵字/參數]";
-        // DYNAMIC_PLACEHOLDER 已移除，不再替換 KEYWORD_PLACEHOLDER
         
         const ICON = {
             MOBILE_NETWORK: 'Signal', FIXED_NETWORK: 'Cable', INFO_SECURITY: 'ShieldCheck', SOFTWARE_DEV: 'Code', AI_APPLICATIONS: 'Bot',
+            DATA_CENTER: 'Server', // 新增機房領域圖示
             DESIGN: 'LayoutDashboard', TROUBLESHOOTING: 'Bug', COMPLAINT: 'UserCheck',
             GEMINI: 'Sparkles', CHATGPT: 'MessageSquare', CLAUDE: 'Feather', PERPLEXITY: 'Search', COPILOT: 'Microsoft', CURSOR: 'Code', NOTEBOOKLM: 'NotebookTabs',
             AGENT_AUTO: 'Bot',   
-            MCP_PARAM: 'Server',  
+            MCP_PARAM: 'Chip', 
             OTHER_LLM: 'Wrench', 
         };
         
-        // 擴充至每領域 10 組提示詞範本 (共 50 組) - 內容與上版一致
+        // 擴充至六大領域，並新增機房/資料中心領域
         const PROMPT_CONFIG = [
             { domainId: 'MOBILE_NETWORK', domainName: '行動網路 (5G/4G)', color: 'bg-red-500', icon: ICON.MOBILE_NETWORK, scenarios: [
                 { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是資深的 5G SA 網路架構師。指令：提供一份包含技術考量、關鍵參數與實施步驟的網路架構規劃大綱。關鍵輸入：規劃地區為 [使用者輸入關鍵字/參數]，核心技術採用 SA/NSA 模式。", inputPlaceholder: "例如：桃園高鐵站週邊高密度覆蓋需求" },
@@ -150,6 +150,19 @@
                 { scenarioId: 'AGENT_AUTO', scenarioName: 'Agent 自動化', promptTemplate: "角色：你是專精於電信維運 (AIOps) 的 AI Agent 設計師。指令：為 [使用者輸入關鍵字/參數] 任務設計一套可行的 Agent 流程與步驟分解，包含監控觸發與自動修復邏輯。", inputPlaceholder: "例如：5G 站點 RSRP 異常漂移的 Agent 自動修復流程" },
                 { scenarioId: 'MCP_PARAM', scenarioName: 'MCP Server 參數', promptTemplate: "角色：你是資深的電信雲 MCP (Managed Control Platform) 專家。指令：根據 [使用者輸入關鍵字/參數] 資訊，提供 MCP Server 的關鍵配置參數調整建議或疑難排解腳本。", inputPlaceholder: "例如：分析 NFVO/VNFM 協同告警，提供 K8S 資源調度參數建議" },
                 { scenarioId: 'OTHER_LLM', scenarioName: '其他 LLM 應用', promptTemplate: "角色：你是跨領域知識彙整專家。指令：比較 [使用者輸入關鍵字/參數] 這兩種 LLM 模型在電信應用中的優勢、限制與成本考量。", inputPlaceholder: "例如：比較 Gemini 與 Llama3 在客服摘要系統中的表現" }
+            ]},
+            // === 新增領域：機房/資料中心 ===
+            { domainId: 'DATA_CENTER', domainName: '機房/資料中心 (DC/IDC)', color: 'bg-gray-700', icon: ICON.DATA_CENTER, scenarios: [
+                { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是資深的機房基礎設施專家。指令：針對 [使用者輸入關鍵字/參數] 設計 UPS 和 HVAC 的 N+1 備援架構及維護計畫大綱。", inputPlaceholder: "例如：總負載 500kW，目標 PUE 1.3 的新機房" },
+                { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是資料中心運維專家。指令：分析以下 [使用者輸入關鍵字/參數] 告警日誌，判斷是機櫃氣流、空調或伺服器負載問題，並提供緊急處理步驟。", inputPlaceholder: "例如：機櫃溫度感測器 T05 連續三小時超過 35°C" },
+                { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是 IDC 託管服務專員。指令：針對客戶 [使用者輸入關鍵字/參數] 的服務等級協定 (SLA) 違規申訴，撰寫專業的事故報告與補償方案。", inputPlaceholder: "例如：因機房核心交換機故障導致服務中斷 45 分鐘的客戶" },
+                { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是資料中心網路架構師。指令：為 [使用者輸入關鍵字/參數] 專案設計一套具備低延遲、高帶寬特性的 Spine-Leaf 網路拓撲，並提供設備選型建議。", inputPlaceholder: "例如：支援 100G 互連的雲端虛擬化平台" },
+                { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是機房資產管理專家。指令：為 [使用者輸入關鍵字/參數] 撰寫一份自動化資產盤點與 CMDB 整合的實施計畫。", inputPlaceholder: "例如：跨兩岸三地機房的 IT 資產管理" },
+                { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是綠色機房顧問。指令：評估 [使用者輸入關鍵字/參數] 的現有設計，提出三個有效降低 PUE 的節能優化建議，並預估效益。", inputPlaceholder: "例如：採用水冷技術的機房" },
+                { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是機房光傳輸專家。指令：分析 [使用者輸入關鍵字/參數] 的光衰減報告，找出光纖線路異常的具體物理位置，並提供緊急修復方案。", inputPlaceholder: "例如：OLT 端口 1-3-12 告警 RX Power -28dBm" },
+                { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是機房消防與門禁系統專家。指令：分析 [使用者輸入關鍵字/參數] 告警，判斷是系統誤判還是實際安全事件，並提供標準操作流程 (SOP)。", inputPlaceholder: "例如：門禁系統顯示『未授權人員進入 E 區』告警" },
+                { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是雲端服務技術支援專家。指令：根據 [使用者輸入關鍵字/參數] 的延遲客訴，判斷是否為機房內網路擁塞所致，並提供技術解釋與解決進度。", inputPlaceholder: "例如：公有雲虛擬機 Ping Latency 突然從 5ms 增加到 50ms" },
+                { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是環境監控協調員。指令：針對 [使用者輸入關鍵字/參數] 的外部投訴，撰寫一份機房噪音/震動的評估報告和改善計畫給相關部門。", inputPlaceholder: "例如：附近居民投訴機房散熱風扇噪音過大" }
             ]}
         ];
 
@@ -164,7 +177,11 @@
 
         const NOTEBOOKLM_CONFIG = {
             title: "NotebookLM PPT 生成與彙整指令",
-            template: `// 角色：你是一位電信業執行顧問，專門為高層管理團隊製作決策簡報... (進階指令)`,
+            template: `// 角色：你是一位電信業執行顧問，專門為高層管理團隊製作決策簡報。
+// 指令：將上方 LLM 提供的技術分析結果，轉化為一份具有決策導向的 PPT 簡報大綱。
+// 內容必須包含：1. 問題摘要 (對高層的衝擊) 2. 根本原因 (RCA) 3. 解決方案 (簡潔且可執行) 4. 建議決策點 (成本/風險/效益分析)。
+// 目標聽眾：[請手動替換為：技術長/營運長/董事會]。
+// 輸出格式：使用 Markdown 標題和項目符號，清晰呈現簡報架構。`,
             instructionSteps: ["1. 複製上方 LLM 的技術分析回答 (最好是單一 LLM 的完整輸出)。", "2. 複製此處的彙整指令。", "3. 將兩者貼入 NotebookLM 中，並手動修改『目標聽眾』。", "4. 產出決策導向的 PPT 大綱。"],
         };
         
@@ -174,7 +191,6 @@
         const keywordsInput = document.getElementById('keywords-input');
         const scenarioWrapper = document.getElementById('scenario-wrapper');
         const keywordsWrapper = document.getElementById('keywords-wrapper');
-        const inputPlaceholderText = document.getElementById('input-placeholder-text');
         const resultsPanel = document.getElementById('results-panel');
         const basePromptOutput = document.getElementById('base-prompt-output');
         const copyBasePromptBtn = document.getElementById('copy-base-prompt-btn');
@@ -182,10 +198,8 @@
         const copyNotebooklmBtn = document.getElementById('copy-notebooklm-btn');
         const notebooklmTemplateOutput = document.getElementById('notebooklm-template-output');
         const notebooklmInstructions = document.getElementById('notebooklm-instructions');
-        const templateSelectWrapper = document.getElementById('template-select-wrapper');
         const templateSelectButtons = document.getElementById('template-select-buttons');
         const promptMetadata = document.getElementById('prompt-metadata');
-
         const templateDetailWrapper = document.getElementById('template-detail-wrapper');
         const templateDetailOutput = document.getElementById('template-detail-output');
 
@@ -355,26 +369,24 @@
 
             keywordsWrapper.classList.remove('hidden');
             keywordsInput.placeholder = selectedTemplate.inputPlaceholder;
-            inputPlaceholderText.textContent = ` (請編輯下方文字，替換 [使用者輸入關鍵字/參數] )`; 
-
+            
             renderTemplateSelectButtons(selectedTemplate.scenarioId); 
             updateResults(); // 立即更新最終 Prompt 預覽並啟用按鈕
         };
 
         /**
-         * 生成通用提示詞 (從 keywordsInput 讀取，不再進行佔位符替換)
+         * 生成通用提示詞 (從 keywordsInput 讀取)
          */
         const generateBasePrompt = () => {
             if (!selectedTemplate) {
                 return ''; 
             }
-            
-            // 直接回傳步驟 4 編輯器的內容，保留 [使用者輸入關鍵字/參數]
+            // 直接回傳步驟 4 編輯器的內容
             return keywordsInput.value.trim(); 
         };
         
         /**
-         * 構造 LLM 啟動按鈕 (根據 selectedTemplate 決定是否啟用)
+         * 構造 LLM 啟動按鈕
          */
         const renderLLMButtons = (basePrompt = '') => {
             llmButtonsContainer.innerHTML = '';
@@ -383,7 +395,7 @@
                 let finalUrl = '#';
                 let buttonClass = `${llm.color} relative`;
 
-                // *** 關鍵修改：只要 selectedTemplate 存在，就啟用按鈕 ***
+                // *** 關鍵修正：只要 selectedTemplate 存在，就啟用按鈕 (isPromptComplete = true) ***
                 const isPromptComplete = selectedTemplate !== null; 
                 
                 if (isPromptComplete) {
@@ -402,7 +414,7 @@
                     } else if (llm.promptParam) {
                          url = `${url}?${param}=${encodedPrompt}`;
                          finalUrl = url;
-                    } else if (llm.baseUri.includes('://')) { // Fallback for simple link structure like Cursor
+                    } else if (llm.baseUri.includes('://')) { 
                          finalUrl = `${url}${encodedPrompt}`;
                     } else {
                          finalUrl = `${url}${encodedPrompt}`;
@@ -437,7 +449,10 @@
             renderLLMButtons(basePrompt); 
             
             if (selectedTemplate && selectedDomain && selectedScenario) {
-                const templateIndex = selectedDomain.scenarios.filter(s => s.scenarioId === selectedScenario.scenarioId).findIndex(t => t === selectedTemplate) + 1;
+                const availablePrompts = selectedDomain.scenarios.filter(s => s.scenarioId === selectedScenario.scenarioId);
+                // 修正：使用 filter 後的陣列索引來計算編號
+                const templateIndex = availablePrompts.findIndex(t => t === selectedTemplate) + 1; 
+
                 promptMetadata.textContent = `領域: ${selectedDomain.domainName} | 場景: ${selectedScenario.scenarioName} | 範本: No.${templateIndex}`;
             } else {
                 promptMetadata.textContent = '';
