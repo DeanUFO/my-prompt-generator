@@ -22,7 +22,8 @@
     <div id="app" class="p-4 md:p-8 max-w-full mx-auto">
         <header class="text-center mb-10">
             <h1 class="text-3xl font-extrabold text-gray-900 text-twm-primary">
-                電信業專業技術提示詞產生器 </h1>
+                電信業專業技術提示詞產生器
+            </h1>
             <p class="text-gray-500 mt-2">五大領域、三大場景與 AI 工具同時呈現</p>
         </header>
 
@@ -43,7 +44,8 @@
                 </div>
 
                 <div id="template-select-wrapper" class="p-6 bg-white rounded-xl shadow-2xl h-fit">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">3. 選擇提示詞範本</h2> <div id="template-select-buttons" class="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-2">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">3. 選擇提示詞範本</h2>
+                    <div id="template-select-buttons" class="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-2">
                         </div>
                 </div>
 
@@ -107,9 +109,9 @@
             MOBILE_NETWORK: 'Signal', FIXED_NETWORK: 'Cable', INFO_SECURITY: 'ShieldCheck', SOFTWARE_DEV: 'Code', AI_APPLICATIONS: 'Bot',
             DESIGN: 'LayoutDashboard', TROUBLESHOOTING: 'Bug', COMPLAINT: 'UserCheck',
             GEMINI: 'Sparkles', CHATGPT: 'MessageSquare', CLAUDE: 'Feather', PERPLEXITY: 'Search', COPILOT: 'Microsoft', CURSOR: 'Code', NOTEBOOKLM: 'NotebookTabs',
-            AGENT_AUTO: 'Bot',    // New icon for Agent
-            MCP_PARAM: 'Server',   // New icon for MCP
-            OTHER_LLM: 'Wrench',   // New icon for Other LLM
+            AGENT_AUTO: 'Bot',   
+            MCP_PARAM: 'Server',  
+            OTHER_LLM: 'Wrench', 
         };
         
         // 擴充至每領域 10 組提示詞範本 (共 50 組)
@@ -284,7 +286,7 @@
                 .map(id => ({ 
                     id, 
                     name: selectedDomain.scenarios.find(s => s.scenarioId === id).scenarioName, 
-                    icon: ICON[id] || ICON.DESIGN // 使用自訂 icon 或預設
+                    icon: ICON[id] || ICON.DESIGN 
                 }));
 
             uniqueScenarios.forEach(s => {
@@ -320,7 +322,7 @@
             renderScenarioButtons(); 
             renderTemplateSelectButtons(scenarioId);
             
-            templateDetailWrapper.classList.add('hidden'); // Hide template detail
+            templateDetailWrapper.classList.add('hidden'); 
             keywordsWrapper.classList.add('hidden');
             updateResults();
         };
@@ -368,8 +370,8 @@
          */
         const handleTemplateSelection = (template) => {
             selectedTemplate = template;
-            keywordsInput.value = '';
-            
+            // keywordsInput.value = ''; // 移除自動清空，保持使用者輸入，但我們會在 updateResults 中處理它
+
             // Show and populate the Template Detail area
             templateDetailWrapper.classList.remove('hidden');
             templateDetailOutput.value = template.promptTemplate.replace(KEYWORD_PLACEHOLDER, `[${selectedTemplate.inputPlaceholder}]`); 
@@ -379,20 +381,31 @@
             inputPlaceholderText.textContent = ` (範例: ${selectedTemplate.inputPlaceholder})`;
 
             renderTemplateSelectButtons(selectedTemplate.scenarioId); 
-            updateResults();
+            updateResults(); // Call updateResults to display the prompt immediately
         };
 
         /**
-         * 生成通用提示詞
+         * 生成通用提示詞 (修改此處以自動帶入範本)
          */
         const generateBasePrompt = () => {
-            const keywords = keywordsInput.value;
-            if (!selectedTemplate || !keywords) {
-                return '';
+            if (!selectedTemplate) {
+                return ''; // No template selected yet
+            }
+            
+            const keywords = keywordsInput.value.trim();
+            let replacementText;
+
+            if (keywords !== '') {
+                // If keywords are entered, use them directly
+                replacementText = keywords;
+            } else {
+                // If keywords are empty, show a dynamic placeholder in the final prompt
+                replacementText = `[請在步驟 4 輸入您的關鍵字/參數]`; 
             }
             
             let prompt = selectedTemplate.promptTemplate;
-            prompt = prompt.replace(KEYWORD_PLACEHOLDER, keywords);
+            // Replace the placeholder with the determined text
+            prompt = prompt.replace(KEYWORD_PLACEHOLDER, replacementText);
             
             return prompt;
         };
@@ -408,7 +421,8 @@
                 let buttonClass = `${llm.color} relative`;
                 const isCursor = llm.llmId === 'CURSOR';
 
-                if (basePrompt) {
+                if (basePrompt && !basePrompt.includes('[請在步驟 4 輸入您的關鍵字/參數]')) {
+                    // 只有在 basePrompt 不為空且不包含我們的「未輸入」提示時才啟用按鈕
                     // 如果有 Prompt，構造 URL
                     const tunedPrompt = `${llm.tuningInstruction}\n\n--- CORE TASK ---\n${basePrompt}`;
                     const encodedPrompt = encodeURIComponentWithNewlines(tunedPrompt);
@@ -422,13 +436,13 @@
                     else { url = `${url}?${param}=${encodedPrompt}`; }
                     finalUrl = url;
                 } else {
-                    // 如果沒有 Prompt，則顯示為禁用狀態
+                    // 如果沒有 Prompt 或只包含 Placeholder，則顯示為禁用狀態
                     buttonClass += ' opacity-50 cursor-not-allowed';
                 }
                 
                 const buttonHtml = `
                     <a href="${finalUrl}" target="${isCursor ? '_self' : '_blank'}" rel="noopener noreferrer" 
-                        ${!basePrompt ? 'onClick="event.preventDefault(); alert(\'請先完成領域、場景、範本選擇及關鍵字輸入！\')"' : ''}>
+                        ${!basePrompt || basePrompt.includes('[請在步驟 4 輸入您的關鍵字/參數]') ? 'onClick="event.preventDefault(); alert(\'請先完成領域、場景、範本選擇並在步驟 4 輸入關鍵字！\')"' : ''}>
                         <button class="w-full flex items-center justify-center p-3 text-white rounded-lg font-medium transition duration-150 ${buttonClass}">
                             ${getLucideIcon(llm.icon, 'w-5 h-5 mr-2')}
                             ${llm.llmName}
@@ -452,7 +466,6 @@
             renderLLMButtons(basePrompt); 
             
             if (selectedTemplate && selectedDomain && selectedScenario) {
-                // 檢查是否已選擇 template，但不一定要有 basePrompt (即關鍵字可為空)
                 promptMetadata.textContent = `領域: ${selectedDomain.domainName} | 場景: ${selectedScenario.scenarioName} | 範本: ${selectedTemplate.scenarioName}`;
             } else {
                 promptMetadata.textContent = '';
