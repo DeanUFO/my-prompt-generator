@@ -57,7 +57,7 @@
                 <div id="keywords-wrapper" class="p-6 bg-white rounded-xl shadow-2xl h-fit hidden">
                     <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">4. 編輯 Prompt / 輸入關鍵字</h2>
                     <label for="keywords-input" class="block text-sm font-medium text-gray-700 mb-2">
-                        💡 請直接在下方文字框中，將 
+                        💡 請直接在下方文字框中編輯 Prompt，並將 
                         <span class="text-red-500 font-mono">[使用者輸入關鍵字/參數]</span> 替換為您的細節。
                     </label>
                     <textarea id="keywords-input" rows="8" placeholder="範本內容將自動載入此處，請直接編輯..." class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-twm-primary focus:border-twm-primary resize-none font-mono text-sm"></textarea>
@@ -68,7 +68,7 @@
                     <div id="llm-buttons-container" class="grid grid-cols-2 gap-3">
                         </div>
                     <p class="mt-4 text-sm text-gray-500">
-                        💡 必須替換步驟 4 中的 [使用者輸入關鍵字/參數] 後，按鈕才會啟用。
+                        💡 **選擇領域、場景、範本後即可啟用按鈕。** 請務必在步驟 4 替換關鍵字以獲得準確結果。
                     </p>
                 </div>
 
@@ -105,7 +105,7 @@
     <script>
         // === 核心資料定義 (CORE CONFIGURATION DATA) ===
         const KEYWORD_PLACEHOLDER = "[使用者輸入關鍵字/參數]";
-        const DYNAMIC_PLACEHOLDER = "[請在步驟 4 編輯此 Prompt，並將此處替換為您的關鍵字/參數]";
+        // DYNAMIC_PLACEHOLDER 已移除，不再替換 KEYWORD_PLACEHOLDER
         
         const ICON = {
             MOBILE_NETWORK: 'Signal', FIXED_NETWORK: 'Cable', INFO_SECURITY: 'ShieldCheck', SOFTWARE_DEV: 'Code', AI_APPLICATIONS: 'Bot',
@@ -186,7 +186,6 @@
         const templateSelectButtons = document.getElementById('template-select-buttons');
         const promptMetadata = document.getElementById('prompt-metadata');
 
-        // New DOM element references
         const templateDetailWrapper = document.getElementById('template-detail-wrapper');
         const templateDetailOutput = document.getElementById('template-detail-output');
 
@@ -244,10 +243,10 @@
 
             renderDomainCards(); 
             renderScenarioButtons();
-            renderTemplateSelectButtons(null); // 清空範本列表
+            renderTemplateSelectButtons(null);
 
             scenarioWrapper.classList.remove('hidden');
-            templateDetailWrapper.classList.add('hidden'); // Hide template detail
+            templateDetailWrapper.classList.add('hidden');
             keywordsWrapper.classList.add('hidden');
             updateResults();
         };
@@ -259,7 +258,6 @@
             scenarioButtons.innerHTML = '';
             if (!selectedDomain) return;
 
-            // 提取唯一的場景
             const uniqueScenarios = Array.from(new Set(selectedDomain.scenarios.map(s => s.scenarioId)))
                 .map(id => ({ 
                     id, 
@@ -332,7 +330,6 @@
                         ? 'bg-yellow-500 text-white border-yellow-500 shadow-md' 
                         : 'bg-gray-50 text-gray-700 hover:bg-yellow-200'
                 }`;
-                // 顯示範本的角色描述作為標題 (直到第一個句號或分號)
                 const snippet = template.promptTemplate.split('。')[0].split('；')[0] + '...';
                 
                 button.textContent = `[No.${index + 1}] ${snippet}`;
@@ -349,46 +346,35 @@
         const handleTemplateSelection = (template) => {
             selectedTemplate = template;
             
-            // *** 修改: 將完整的提示詞範本帶入關鍵字輸入框 (步驟 4) ***
+            // 將完整的提示詞範本帶入關鍵字輸入框 (步驟 4)
             keywordsInput.value = selectedTemplate.promptTemplate; 
-            // *************************************************
 
-            // Show and populate the Template Detail area
+            // Show and populate the Template Detail area (shows placeholder example)
             templateDetailWrapper.classList.remove('hidden');
-            // Template Detail Output 依然顯示參數範例
             templateDetailOutput.value = template.promptTemplate.replace(KEYWORD_PLACEHOLDER, `[${selectedTemplate.inputPlaceholder}]`); 
 
             keywordsWrapper.classList.remove('hidden');
             keywordsInput.placeholder = selectedTemplate.inputPlaceholder;
-            // 由於步驟 4 成為編輯器，此處文字改為引導編輯
             inputPlaceholderText.textContent = ` (請編輯下方文字，替換 [使用者輸入關鍵字/參數] )`; 
 
             renderTemplateSelectButtons(selectedTemplate.scenarioId); 
-            updateResults(); // 立即更新最終 Prompt 預覽
+            updateResults(); // 立即更新最終 Prompt 預覽並啟用按鈕
         };
 
         /**
-         * 生成通用提示詞 (從 keywordsInput 讀取並處理佔位符)
+         * 生成通用提示詞 (從 keywordsInput 讀取，不再進行佔位符替換)
          */
         const generateBasePrompt = () => {
             if (!selectedTemplate) {
                 return ''; 
             }
             
-            let prompt = keywordsInput.value.trim(); // Prompt 內容現在從步驟 4 輸入框讀取
-            
-            // 檢查原佔位符是否還存在
-            if (prompt.includes(KEYWORD_PLACEHOLDER)) {
-                // 如果存在，則替換為引導編輯的動態文字
-                prompt = prompt.replace(KEYWORD_PLACEHOLDER, DYNAMIC_PLACEHOLDER);
-            }
-            // 如果不存在，表示使用者已經輸入了關鍵字，直接回傳編輯後的 prompt
-
-            return prompt;
+            // 直接回傳步驟 4 編輯器的內容，保留 [使用者輸入關鍵字/參數]
+            return keywordsInput.value.trim(); 
         };
         
         /**
-         * 構造 LLM 啟動按鈕 (永久顯示)
+         * 構造 LLM 啟動按鈕 (根據 selectedTemplate 決定是否啟用)
          */
         const renderLLMButtons = (basePrompt = '') => {
             llmButtonsContainer.innerHTML = '';
@@ -397,11 +383,11 @@
                 let finalUrl = '#';
                 let buttonClass = `${llm.color} relative`;
 
-                // 只有當 basePrompt 存在且不包含任何佔位符時，才啟用按鈕
-                const isPromptComplete = basePrompt && !basePrompt.includes(DYNAMIC_PLACEHOLDER);
+                // *** 關鍵修改：只要 selectedTemplate 存在，就啟用按鈕 ***
+                const isPromptComplete = selectedTemplate !== null; 
                 
                 if (isPromptComplete) {
-                    // 如果 Prompt 已經完成，構造 URL
+                    // 使用 basePrompt (即 keywordsInput 的內容) 構造 URL
                     const tunedPrompt = `${llm.tuningInstruction}\n\n--- CORE TASK ---\n${basePrompt}`;
                     const encodedPrompt = encodeURIComponentWithNewlines(tunedPrompt);
                     let url = llm.baseUri;
@@ -409,30 +395,26 @@
                     
                     if (llm.llmId === 'CLAUDE' || llm.llmId === 'GEMINI') {
                         // For models that often don't support direct URL query params for full prompt in all cases
-                        // We use the base URI and the user will manually paste, but we still make the button active.
-                        finalUrl = '#';
-                    } else if (llm.baseUri.includes('?')) { 
+                        finalUrl = '#'; // User must copy.
+                    } else if (llm.baseUri.includes('?') && llm.promptParam) { 
                         url = `${url}&${param}=${encodedPrompt}`; 
                         finalUrl = url;
                     } else if (llm.promptParam) {
                          url = `${url}?${param}=${encodedPrompt}`;
                          finalUrl = url;
-                    } else { // Fallback for simple link structure
+                    } else if (llm.baseUri.includes('://')) { // Fallback for simple link structure like Cursor
+                         finalUrl = `${url}${encodedPrompt}`;
+                    } else {
                          finalUrl = `${url}${encodedPrompt}`;
                     }
-                    
-                    if (llm.llmId === 'CLAUDE' || llm.llmId === 'GEMINI') {
-                         finalUrl = '#'; // Override to prevent complex URL issues, user must copy.
-                    }
-
                 } else {
-                    // 禁用狀態
+                    // If no template selected, buttons are disabled
                     buttonClass += ' opacity-50 cursor-not-allowed';
                 }
                 
                 const buttonHtml = `
                     <a href="${finalUrl}" target="_blank" rel="noopener noreferrer" 
-                        ${!isPromptComplete ? 'onClick="event.preventDefault(); alert(\'請先替換步驟 4 中的 [使用者輸入關鍵字/參數]！\')"' : ''}>
+                        ${!isPromptComplete ? 'onClick="event.preventDefault(); alert(\'請先完成領域、場景、範本選擇！\')"' : ''}>
                         <button class="w-full flex items-center justify-center p-3 text-white rounded-lg font-medium transition duration-150 ${buttonClass}">
                             ${getLucideIcon(llm.icon, 'w-5 h-5 mr-2')}
                             ${llm.llmName}
@@ -452,7 +434,6 @@
             
             basePromptOutput.value = basePrompt || "選擇領域、場景、範本並編輯後，此處將顯示生成的提示詞...";
             
-            // 隨時更新 LLM 按鈕狀態 (啟用/禁用)
             renderLLMButtons(basePrompt); 
             
             if (selectedTemplate && selectedDomain && selectedScenario) {
@@ -473,7 +454,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             renderDomainCards();
             renderLLMButtons(); // 初始時渲染禁用狀態按鈕
-            renderTemplateSelectButtons(null); // 初始時顯示空的範本列表
+            renderTemplateSelectButtons(null); 
 
             // 填充 NotebookLM 區塊
             notebooklmTemplateOutput.value = NOTEBOOKLM_CONFIG.template;
