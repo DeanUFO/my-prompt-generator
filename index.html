@@ -21,8 +21,8 @@
 
     <div id="app" class="p-4 md:p-8 max-w-full mx-auto">
         <header class="text-center mb-10">
-            <h1 class="text-3xl font-extrabold text-gray-900">
-                <span class="text-twm-primary">TWM Tech</span> 電信業專業技術提示詞產生器
+            <h1 class="text-3xl font-extrabold text-gray-900 text-twm-primary">
+                電信業專業技術提示詞產生器
             </h1>
             <p class="text-gray-500 mt-2">五大領域、三大場景與 AI 工具同時呈現</p>
         </header>
@@ -43,7 +43,7 @@
                         </div>
                 </div>
 
-                <div id="template-select-wrapper" class="p-6 bg-white rounded-xl shadow-2xl h-fit hidden">
+                <div id="template-select-wrapper" class="p-6 bg-white rounded-xl shadow-2xl h-fit">
                     <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">3. 選擇提示詞範本 (共 10 組)</h2>
                     <div id="template-select-buttons" class="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-2">
                         </div>
@@ -176,7 +176,7 @@
 
         let selectedDomain = null;
         let selectedScenario = null;
-        let selectedTemplate = null; // 新增：選定的單一提示詞模板物件
+        let selectedTemplate = null; 
 
         // === 輔助函數 (Utility Functions) ===
         const encodeURIComponentWithNewlines = (str) => encodeURIComponent(str).replace(/%0A/g, '\n');
@@ -227,9 +227,10 @@
 
             renderDomainCards(); 
             renderScenarioButtons();
-            
+            renderTemplateSelectButtons(null); // 清空範本列表
+
             scenarioWrapper.classList.remove('hidden');
-            templateSelectWrapper.classList.add('hidden');
+            // templateSelectWrapper 不再隱藏
             keywordsWrapper.classList.add('hidden');
             updateResults();
         };
@@ -268,25 +269,32 @@
          * 處理場景選擇
          */
         const handleScenarioSelection = (scenarioId) => {
-            // 找到該場景下的所有模板
             selectedScenario = { scenarioId, scenarioName: selectedDomain.scenarios.find(s => s.scenarioId === scenarioId).scenarioName };
             selectedTemplate = null;
             keywordsInput.value = '';
 
-            renderScenarioButtons(); // 更新選中狀態
+            renderScenarioButtons(); 
             renderTemplateSelectButtons(scenarioId);
             
-            templateSelectWrapper.classList.remove('hidden');
+            // templateSelectWrapper 不再隱藏
             keywordsWrapper.classList.add('hidden');
             updateResults();
         };
 
         /**
-         * 渲染特定領域+場景下的 10 組提示詞範本按鈕 (新區塊)
+         * 渲染特定領域+場景下的 10 組提示詞範本按鈕
          */
         const renderTemplateSelectButtons = (scenarioId) => {
             templateSelectButtons.innerHTML = '';
-            const availablePrompts = selectedDomain.scenarios.filter(s => s.scenarioId === scenarioId);
+            
+            const availablePrompts = (selectedDomain && scenarioId) 
+                ? selectedDomain.scenarios.filter(s => s.scenarioId === scenarioId)
+                : [];
+
+            if (availablePrompts.length === 0) {
+                templateSelectButtons.innerHTML = '<p class="text-gray-500 text-center py-4">請先在上方選擇領域與工作場景。</p>';
+                return;
+            }
 
             availablePrompts.forEach((template, index) => {
                 const isSelected = selectedTemplate === template;
@@ -304,7 +312,7 @@
                 templateSelectButtons.appendChild(button);
             });
             
-            templateSelectWrapper.classList.remove('hidden');
+            // templateSelectWrapper 不再隱藏
             lucide.createIcons();
         };
 
@@ -319,7 +327,7 @@
             keywordsInput.placeholder = selectedTemplate.inputPlaceholder;
             inputPlaceholderText.textContent = ` (範例: ${selectedTemplate.inputPlaceholder})`;
 
-            renderTemplateSelectButtons(selectedTemplate.scenarioId); // 更新選中狀態
+            renderTemplateSelectButtons(selectedTemplate.scenarioId); 
             updateResults();
         };
 
@@ -409,6 +417,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             renderDomainCards();
             renderLLMButtons(); // 初始時渲染禁用狀態按鈕
+            renderTemplateSelectButtons(null); // 初始時顯示空的範本列表
 
             // 填充 NotebookLM 區塊
             notebooklmTemplateOutput.value = NOTEBOOKLM_CONFIG.template;
