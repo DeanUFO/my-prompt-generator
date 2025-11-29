@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>電信業專業技術提示詞產生器 v3.2</title>
+    <title>電信業專業技術提示詞產生器 v3.3 (修正 Gemini/Perplexity)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -165,11 +165,12 @@
             ]}
         ];
 
+        // 修正後的 LLM 配置，尤其是 Gemini 和 Perplexity 的 baseUri
         const LLM_CONFIG = [
-            { llmId: 'GEMINI', llmName: 'Gemini', icon: ICON.GEMINI, color: 'bg-indigo-600 hover:bg-indigo-700', baseUri: 'https://gemini.google.com/app/prompt/', tuningInstruction: '請以 Google 搜尋資料庫為基礎，優先引用最新的公開資訊。', promptParam: '' },
+            { llmId: 'GEMINI', llmName: 'Gemini', icon: ICON.GEMINI, color: 'bg-indigo-600 hover:bg-indigo-700', baseUri: 'https://gemini.google.com/app/prompt', tuningInstruction: '請以 Google 搜尋資料庫為基礎，優先引用最新的公開資訊。', promptParam: 'q' }, // 確保有 q 參數
             { llmId: 'CHATGPT', llmName: 'ChatGPT', icon: ICON.CHATGPT, color: 'bg-green-600 hover:bg-green-700', baseUri: 'https://chatgpt.com/?q=', tuningInstruction: '請以極簡的對話風格回答，並將所有專業名詞解釋放在文末。', promptParam: 'q' },
-            { llmId: 'CLAUDE', llmName: 'Claude', icon: ICON.CLAUDE, color: 'bg-orange-600 hover:bg-orange-700', baseUri: 'https://claude.ai/chats', tuningInstruction: '請以一位耐心、細心的專家角色，提供深入且詳細的分析。', promptParam: '' },
-            { llmId: 'PERPLEXITY', llmName: 'Perplexity', icon: ICON.PERPLEXITY, color: 'bg-blue-600 hover:bg-blue-700', baseUri: 'https://www.perplexity.ai/search?q=', tuningInstruction: '回答必須引用至少兩個相關的 3GPP 標準文件、電信設備白皮書或學術論文來佐證你的 RCA 結論。', promptParam: 'q' },
+            { llmId: 'CLAUDE', llmName: 'Claude', icon: ICON.CLAUDE, color: 'bg-orange-600 hover:bg-orange-700', baseUri: 'https://claude.ai/chats', tuningInstruction: '請以一位耐心、細心的專家角色，提供深入且詳細的分析。', promptParam: '' }, // Claude 仍建議手動複製
+            { llmId: 'PERPLEXITY', llmName: 'Perplexity', icon: ICON.PERPLEXITY, color: 'bg-blue-600 hover:bg-blue-700', baseUri: 'https://www.perplexity.ai/search', tuningInstruction: '回答必須引用至少兩個相關的 3GPP 標準文件、電信設備白皮書或學術論文來佐證你的 RCA 結論。', promptParam: 'q' }, // 確保有 q 參數
             { llmId: 'CURSOR', llmName: 'Cursor', icon: ICON.CURSOR, color: 'bg-gray-800 hover:bg-gray-900', baseUri: 'cursor://newChat?prompt=', tuningInstruction: '請以 Cursor 專屬的格式，將所有解決步驟轉換為可執行的 Shell 或 Python 程式碼區塊。', promptParam: 'prompt' },
             { llmId: 'COPILOT', llmName: 'MS Copilot', icon: ICON.COPILOT, color: 'bg-purple-600 hover:bg-purple-700', baseUri: 'https://copilot.microsoft.com/search?q=', tuningInstruction: '請以簡短的重點條列方式回答，避免長篇大論。', promptParam: 'q' }
         ];
@@ -208,8 +209,8 @@
         let selectedTemplate = null; 
 
         // === 輔助函數 (Utility Functions) ===
-        // 修正編碼函數：確保換行符號被保留
-        const encodeURIComponentWithNewlines = (str) => encodeURIComponent(str).replace(/%0A/g, '\n');
+        // 修正：使用標準的 encodeURIComponent，確保 URL 結構正確。
+        const encodePromptForURL = (str) => encodeURIComponent(str);
         
         const copyToClipboard = (text) => {
             navigator.clipboard.writeText(text).then(() => {
@@ -401,23 +402,24 @@
                 
                 if (isPromptComplete) {
                     const tunedPrompt = `${llm.tuningInstruction}\n\n--- CORE TASK ---\n${basePrompt}`;
-                    // 注意：這裡使用 encodeURIComponentWithNewlines 確保換行被保留
-                    const encodedPrompt = encodeURIComponentWithNewlines(tunedPrompt); 
+                    // 使用標準 URL 編碼
+                    const encodedPrompt = encodePromptForURL(tunedPrompt); 
                     
                     if (llm.llmId === 'CLAUDE') {
-                        // Claude does not reliably support URL prompt passing; requires manual copy.
+                        // Claude 仍然不穩定支持 URL 傳遞 Prompt，建議手動複製。
                         finalUrl = '#'; 
-                    } else if (llm.llmId === 'GEMINI') {
-                        // FIX: Use the standard 'q' parameter for prompt.
-                        finalUrl = `https://gemini.google.com/app/prompt/?q=${encodedPrompt}`;
-                    } else if (llm.llmId === 'PERPLEXITY' || llm.llmId === 'CHATGPT' || llm.llmId === 'COPILOT') {
-                        // FIX: Perplexity and others that use 'baseUri?q=' are now correctly handled by appending prompt to baseUri.
-                        finalUrl = `${llm.baseUri}${encodedPrompt}`;
-                    } else if (llm.llmId === 'CURSOR') {
-                        // Cursor uses a special protocol link structure
-                        finalUrl = `${llm.baseUri}${encodedPrompt}`;
+                    } else if (llm.promptParam) {
+                        // 處理帶有參數的 LLM (Gemini, Perplexity, ChatGPT, Copilot, Cursor)
+                        // 修正：確保 baseUri 和參數之間使用 ? 或 &
+                        const separator = llm.baseUri.includes('?') ? '&' : '?';
+                        
+                        if (llm.llmId === 'CURSOR') {
+                           finalUrl = `${llm.baseUri}${encodedPrompt}`; // Cursor 使用自定義協議，直接追加
+                        } else {
+                           finalUrl = `${llm.baseUri}${separator}${llm.promptParam}=${encodedPrompt}`;
+                        }
                     } else {
-                        // Fallback, keep as manual copy
+                        // 其他不需要參數的 LLM (但目前配置中只剩 Claude 在此)
                         finalUrl = '#';
                     }
                 } else {
