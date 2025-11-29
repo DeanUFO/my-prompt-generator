@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TWM 整合呈現版 - 提示詞產生器 v4</title>
+    <title>TWM 整合呈現版 - 提示詞產生器 v3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -44,7 +44,7 @@
                 </div>
 
                 <div id="template-select-wrapper" class="p-6 bg-white rounded-xl shadow-2xl h-fit hidden">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">3. 選擇提示詞範本</h2>
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">3. 選擇提示詞範本 (共 10 組)</h2>
                     <div id="template-select-buttons" class="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-2">
                         </div>
                 </div>
@@ -104,10 +104,6 @@
             MOBILE_NETWORK: 'Signal', FIXED_NETWORK: 'Cable', INFO_SECURITY: 'ShieldCheck', SOFTWARE_DEV: 'Code', AI_APPLICATIONS: 'Bot',
             DESIGN: 'LayoutDashboard', TROUBLESHOOTING: 'Bug', COMPLAINT: 'UserCheck',
             GEMINI: 'Sparkles', CHATGPT: 'MessageSquare', CLAUDE: 'Feather', PERPLEXITY: 'Search', COPILOT: 'Microsoft', CURSOR: 'Code', NOTEBOOKLM: 'NotebookTabs',
-            // 新增 AI 應用相關圖標
-            AGENT: 'Zap', // For Agent
-            MCP_SERVER: 'Server', // For MCP Server
-            GENERIC_LLM: 'Brain', // For Other LLM
         };
         
         // 擴充至每領域 10 組提示詞範本 (共 50 組)
@@ -151,11 +147,7 @@
             { llmId: 'CLAUDE', llmName: 'Claude', icon: ICON.CLAUDE, color: 'bg-orange-600 hover:bg-orange-700', baseUri: 'https://claude.ai/chats', tuningInstruction: '請以一位耐心、細心的專家角色，提供深入且詳細的分析。', promptParam: '' },
             { llmId: 'PERPLEXITY', llmName: 'Perplexity', icon: ICON.PERPLEXITY, color: 'bg-blue-600 hover:bg-blue-700', baseUri: 'https://www.perplexity.ai/search?q=', tuningInstruction: '回答必須引用至少兩個相關的 3GPP 標準文件、電信設備白皮書或學術論文來佐證你的 RCA 結論。', promptParam: 'q' },
             { llmId: 'CURSOR', llmName: 'Cursor', icon: ICON.CURSOR, color: 'bg-gray-800 hover:bg-gray-900', baseUri: 'cursor://newChat?prompt=', tuningInstruction: '請以 Cursor 專屬的格式，將所有解決步驟轉換為可執行的 Shell 或 Python 程式碼區塊。', promptParam: 'prompt' },
-            { llmId: 'COPILOT', llmName: 'MS Copilot', icon: ICON.COPILOT, color: 'bg-purple-600 hover:bg-purple-700', baseUri: 'https://copilot.microsoft.com/search?q=', tuningInstruction: '請以簡短的重點條列方式回答，避免長篇大論。', promptParam: 'q' },
-            // 新增項目: Agent, MCP Server, 其它 LLM
-            { llmId: 'AGENT', llmName: 'Agent 自動化', icon: ICON.AGENT, color: 'bg-sky-600 hover:bg-sky-700', baseUri: '#', tuningInstruction: '請將所有輸出轉換為 Agent 或腳本的執行步驟，以確保自動化環境可直接採用。', promptParam: '' },
-            { llmId: 'MCP_SERVER', llmName: 'MCP Server 參數', icon: ICON.MCP_SERVER, color: 'bg-fuchsia-600 hover:bg-fuchsia-700', baseUri: '#', tuningInstruction: '請以電信 MCP Server (如 OAM/EMS) 的視角，提供精確的配置參數、指令碼或北向/南向介面配置範例。', promptParam: '' },
-            { llmId: 'GENERIC_LLM', llmName: '其他 LLM', icon: ICON.GENERIC_LLM, color: 'bg-gray-500 hover:bg-gray-600', baseUri: '#', tuningInstruction: '請以最中立、客觀且資訊豐富的學術風格回答。', promptParam: '' }
+            { llmId: 'COPILOT', llmName: 'MS Copilot', icon: ICON.COPILOT, color: 'bg-purple-600 hover:bg-purple-700', baseUri: 'https://copilot.microsoft.com/search?q=', tuningInstruction: '請以簡短的重點條列方式回答，避免長篇大論。', promptParam: 'q' }
         ];
 
         const NOTEBOOKLM_CONFIG = {
