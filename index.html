@@ -50,16 +50,17 @@
                 </div>
 
                 <div id="template-detail-wrapper" class="p-6 bg-white rounded-xl shadow-2xl h-fit hidden">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">範本詳細內容</h2>
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">範本原始內容 (僅供參考)</h2>
                     <textarea id="template-detail-output" readonly rows="6" class="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 font-mono text-sm resize-none" placeholder="選定範本後，此處將顯示範本原始內容..."></textarea>
                 </div>
                 
                 <div id="keywords-wrapper" class="p-6 bg-white rounded-xl shadow-2xl h-fit hidden">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">4. 輸入關鍵字 / 參數</h2>
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">4. 編輯 Prompt / 輸入關鍵字</h2>
                     <label for="keywords-input" class="block text-sm font-medium text-gray-700 mb-2">
-                        <span id="input-placeholder-text" class="text-xs text-gray-500"></span>
+                        💡 請直接在下方文字框中，將 
+                        <span class="text-red-500 font-mono">[使用者輸入關鍵字/參數]</span> 替換為您的細節。
                     </label>
-                    <textarea id="keywords-input" rows="4" placeholder="請輸入告警碼、現象描述等細節..." class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-twm-primary focus:border-twm-primary resize-none"></textarea>
+                    <textarea id="keywords-input" rows="8" placeholder="範本內容將自動載入此處，請直接編輯..." class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-twm-primary focus:border-twm-primary resize-none font-mono text-sm"></textarea>
                 </div>
                 
                 <div class="p-6 bg-white rounded-xl shadow-2xl h-fit">
@@ -67,7 +68,7 @@
                     <div id="llm-buttons-container" class="grid grid-cols-2 gap-3">
                         </div>
                     <p class="mt-4 text-sm text-gray-500">
-                        💡 選擇領域/場景/範本並輸入關鍵字後，點擊這裡的按鈕即可啟動。
+                        💡 必須替換步驟 4 中的 [使用者輸入關鍵字/參數] 後，按鈕才會啟用。
                     </p>
                 </div>
 
@@ -79,7 +80,7 @@
                         <i data-lucide="MessageSquare" class="lucide-icon w-5 h-5 mr-2 text-twm-primary"></i> 
                         最終生成 Prompt 預覽
                     </h2>
-                    <textarea id="base-prompt-output" readonly rows="12" class="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-800 font-mono text-sm resize-none" placeholder="選擇領域、場景並輸入關鍵字後，此處將顯示生成的提示詞..."></textarea>
+                    <textarea id="base-prompt-output" readonly rows="12" class="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-800 font-mono text-sm resize-none" placeholder="選擇領域、場景、範本並編輯後，此處將顯示生成的提示詞..."></textarea>
                     <button id="copy-base-prompt-btn" class="mt-4 px-4 py-2 bg-twm-primary text-white font-medium rounded-lg shadow-md hover:bg-twm-primary-dark transition duration-150">
                         📋 複製 Prompt
                     </button>
@@ -104,6 +105,7 @@
     <script>
         // === 核心資料定義 (CORE CONFIGURATION DATA) ===
         const KEYWORD_PLACEHOLDER = "[使用者輸入關鍵字/參數]";
+        const DYNAMIC_PLACEHOLDER = "[請在步驟 4 編輯此 Prompt，並將此處替換為您的關鍵字/參數]";
         
         const ICON = {
             MOBILE_NETWORK: 'Signal', FIXED_NETWORK: 'Cable', INFO_SECURITY: 'ShieldCheck', SOFTWARE_DEV: 'Code', AI_APPLICATIONS: 'Bot',
@@ -114,64 +116,40 @@
             OTHER_LLM: 'Wrench', 
         };
         
-        // 擴充至每領域 10 組提示詞範本 (共 50 組)
+        // 擴充至每領域 10 組提示詞範本 (共 50 組) - 內容與上版一致
         const PROMPT_CONFIG = [
             { domainId: 'MOBILE_NETWORK', domainName: '行動網路 (5G/4G)', color: 'bg-red-500', icon: ICON.MOBILE_NETWORK, scenarios: [
                 { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是資深的 5G SA 網路架構師。指令：提供一份包含技術考量、關鍵參數與實施步驟的網路架構規劃大綱。關鍵輸入：規劃地區為 [使用者輸入關鍵字/參數]，核心技術採用 SA/NSA 模式。", inputPlaceholder: "例如：桃園高鐵站週邊高密度覆蓋需求" },
                 { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是精通 5G/4G 告警分析與 RCA 的網路專家。指令：分析下方告警日誌與現象描述，判斷 Root Cause 並提供三項可能的解決步驟。關鍵輸入：告警碼/日誌片段：[使用者輸入關鍵字/參數]。", inputPlaceholder: "例如：告警碼 5003 RRC失敗, 站點ID: TWN_A001" },
                 { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是專業的網路品質分析專員。指令：請根據用戶申告內容 [使用者輸入關鍵字/參數]，分析潛在問題並提供專業話術建議。", inputPlaceholder: "例如：客戶申訴內容：在家裡客廳訊號一直跳 4G" },
-                // 額外範例 (Design x 3)
                 { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是 VoNR 服務規劃專家。指令：為 [使用者輸入關鍵字/參數] 區域設計 VoNR QoS 參數配置與容災備援機制。輸出：包含 SIP 優先級和 E-RAB 配置建議。", inputPlaceholder: "例如：雙北核心區域的 VoNR QoS 配置" },
                 { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是基站容量規劃師。指令：基於 [使用者輸入關鍵字/參數] 區域預估的用戶增長率，計算未來三年所需的 LAA/NR-U 資源需求與 Channel Bonding 策略。", inputPlaceholder: "例如：新興科學園區的未來容量規劃" },
                 { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是邊緣運算 (MEC) 整合專家。指令：針對 [使用者輸入關鍵字/參數] 的延遲需求，設計 MEC 節點的網路拓撲與 UPF 卸載策略。", inputPlaceholder: "例如：工廠自動化 (URLLC) 的 MEC 部署方案" },
-                // 額外範例 (Troubleshooting x 4)
                 { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是 RAN L3 協定追蹤專家。指令：分析附上的 RRC Setup Request Log [使用者輸入關鍵字/參數]，找出 Setup Failure 的具體原因碼 (Cause Code) 並提供對應的優化建議。", inputPlaceholder: "例如：RRC Setup Request Log Trace Dump" },
                 { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是核心網 MME/AMF 專家。指令：分析 [使用者輸入關鍵字/參數] 設備上的 Paging Failure 告警，檢查 UDM/HSS 的配置狀態並提供 S1/N2 介面排查步驟。", inputPlaceholder: "例如：MME/AMF 設備 Paging Failure 告警訊息" },
                 { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是 IMS 註冊專家。指令：分析 [使用者輸入關鍵字/參數] 的 IMS 註冊失敗 Log，檢查 P-CSCF/S-CSCF 狀態，並提供 SIP 協議層的解決方案。", inputPlaceholder: "例如：IMS 註冊失敗，SIP Error Code 403" },
                 { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是網路性能優化工程師。指令：根據 [使用者輸入關鍵字/參數] 的 KPI 下降趨勢，判斷是硬體故障、參數配置錯誤還是外部干擾，並提出數據分析方向。", inputPlaceholder: "例如：某站點 PUSCH UL-SINR 連續三天下降 2dB" },
-                // 額外範例 (Complaint x 3)
                 { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是傳輸網路故障協調員。指令：分析用戶 [使用者輸入關鍵字/參數] 的大量丟包(Packet Loss)申訴，判斷是否為 M-plane 異常，並提供給用戶的時程說明。", inputPlaceholder: "例如：客戶申訴：視訊會議延遲極高，Ping 值超過 200ms" },
                 { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是國際漫遊服務專家。指令：用戶申訴 [使用者輸入關鍵字/參數] 在國外無法註冊網路，分析 HPLMN/VPLMN 間的協定問題，並提供給客戶端檢查步驟。", inputPlaceholder: "例如：客戶申訴：在日本無法使用 CHT 漫遊服務" },
                 { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是網路覆蓋問題溝通專員。指令：根據 [使用者輸入關鍵字/參數] 的室內死角申訴，提供信號穿透測試和小型基地台 (Small Cell) 的建議話術。", inputPlaceholder: "例如：客戶申訴：地下室收訊不良" }
-            ]}, // 總計 10 組 Mobile Network
-            // 以下四個領域將提供 10 組，但為了保持代碼的可讀性，只列出前 3 組，但總數在程式邏輯中仍為 10 組。
+            ]},
             { domainId: 'FIXED_NETWORK', domainName: '固定網路 (IP/GPON)', color: 'bg-blue-500', icon: ICON.FIXED_NETWORK, scenarios: [{ scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是資深的 IP/MPLS 網路工程師。指令：針對新區域 [使用者輸入關鍵字/參數] 設計 IP/MPLS 規劃書大綱，包含 QoS 和 HA 方案。", inputPlaceholder: "例如：新光纖到府(GPON)區域的網路設計" }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是精通 GPON/光纖線路與 IP 故障分析的專家。指令：根據告警 [使用者輸入關鍵字/參數]，判斷 OLT/ONT 設備或光路故障點，並提供查修步驟。", inputPlaceholder: "例如：用戶光衰過大，OLT 端口 P05 閃紅燈" }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是專業的寬頻網路服務專員。指令：分析用戶 [使用者輸入關鍵字/參數] 的網速申訴，判斷問題可能來自 CPE、接取網路或核心骨幹。", inputPlaceholder: "例如：客戶申訴：晚上 8 點網速從 300M 掉到 50M" }, 
-            // 佔位符 (其餘 7 組)
-            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "...", inputPlaceholder: "..." }]},
+            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是 BNG/BRAS 專家。指令：為 [使用者輸入關鍵字/參數] 設計動態頻寬分配策略和 AAA 認證流程。", inputPlaceholder: "例如：大型社區寬頻存取網路設計" }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是海底電纜系統工程師。指令：評估 [使用者輸入關鍵字/參數] 新路由的光纜衰減和容錯備援設計。", inputPlaceholder: "例如：跨國海底電纜系統規劃" }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是資料中心網路架構師。指令：針對 [使用者輸入關鍵字/參數] 設計 Spine-Leaf 架構和 EVPN-VXLAN 部署方案。", inputPlaceholder: "例如：新一代雲端資料中心網路" }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是 IP 路由協定 (OSPF/BGP) 專家。指令：分析 [使用者輸入關鍵字/參數] 的路由表不一致問題，提供排除命令和建議。", inputPlaceholder: "例如：BGP Peer 斷線告警和路由表摘要" }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是 QoS/CoS 專家。指令：針對 [使用者輸入關鍵字/參數] 的延遲/抖動問題，檢查 DiffServ 標記和佇列配置。", inputPlaceholder: "例如：VoIP 服務品質下降報告" }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是企業專線服務專員。指令：分析 [使用者輸入關鍵字/參數] 的 SLA 違規申訴，判斷問題歸屬並提供專業報告。", inputPlaceholder: "例如：企業用戶申訴：專線每月停機時間超標" }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是網路建設進度協調員。指令：針對 [使用者輸入關鍵字/參數] 延誤的投訴，撰寫一份對用戶的專業延期說明函。", inputPlaceholder: "例如：光纖佈建進度延遲 3 週的用戶投訴" }]},
             { domainId: 'INFO_SECURITY', domainName: '資訊安全', color: 'bg-yellow-500', icon: ICON.INFO_SECURITY, scenarios: [{ scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是具備 ISO 27001 經驗的資安架構師。指令：針對 [使用者輸入關鍵字/參數] 的開發與部署，設計安全控制與合規性檢查大綱。", inputPlaceholder: "例如：新 BSS 系統的雲端資安架構設計" }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是頂尖的 DDoS 與網路入侵分析師。指令：分析以下流量日誌或資安告警 [使用者輸入關鍵字/參數]，判斷威脅類型並提供即時阻斷策略。", inputPlaceholder: "例如：異常流量日誌：源 IP 192.168.1.5 大量 SYN 請求" }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是資料隱私與資安事件溝通專家。指令：針對下列資安事件 [使用者輸入關鍵字/參數]，撰寫一份對外公開的說明稿草稿。", inputPlaceholder: "例如：小型用戶資料洩露事件，影響 500 位用戶" },
-            // 佔位符 (其餘 7 組)
-            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "...", inputPlaceholder: "..." }]},
+            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是滲透測試專家。指令：為 [使用者輸入關鍵字/參數] 撰寫一份滲透測試計畫大綱，側重於 API 弱點和身份驗證機制。", inputPlaceholder: "例如：新推出的移動支付 App" }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是雲端資安合規專家。指令：針對 [使用者輸入關鍵字/參數] 的 IaaS/PaaS 環境，設計一套符合 CSA STAR Level 2 的控制措施。", inputPlaceholder: "例如：AWS 上的 5G 核心網部署" }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是資安意識訓練專家。指令：為 [使用者輸入關鍵字/參數] 撰寫一份社交工程攻擊的模擬郵件腳本和員工應對指南。", inputPlaceholder: "例如：針對高階主管的釣魚郵件訓練" }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是端點偵測與回應 (EDR) 專家。指令：分析 [使用者輸入關鍵字/參數] EDR 告警，判斷是否為 APT 攻擊，並提供隔離與根除步驟。", inputPlaceholder: "例如：某伺服器出現 PowerShell 異常行為告警" }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是郵件安全專家。指令：分析 [使用者輸入關鍵字/參數] 的郵件標頭和附件，判斷惡意軟體類型，並建議 DMARC/SPF 配置優化。", inputPlaceholder: "例如：大量垃圾郵件進入企業信箱" }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是隱私權法律顧問。指令：針對 [使用者輸入關鍵字/參數] 的用戶數據調閱請求，提供符合個資法和 GDPR 的處理流程和回復範本。", inputPlaceholder: "例如：用戶要求刪除所有個人資料" }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是資安事件報告撰寫者。指令：根據 [使用者輸入關鍵字/參數] 的內部調查報告，彙整一份對監管機構的正式事件說明摘要。", inputPlaceholder: "例如：系統漏洞導致服務中斷 3 小時的調查報告" }]},
             { domainId: 'SOFTWARE_DEV', domainName: '軟體開發 (OSS/BSS)', color: 'bg-teal-500', icon: ICON.SOFTWARE_DEV, scenarios: [{ scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是 Cloud Native 與微服務架構專家。指令：針對 [使用者輸入關鍵字/參數] 系統，設計一個 DevOps Pipeline 規劃，並建議合適的雲端原生技術棧。", inputPlaceholder: "例如：新一代 OSS 故障管理系統" }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是精通 Kubernetes/SDN 故障排除的開發人員。指令：分析 [使用者輸入關鍵字/參數] 程式碼片段或錯誤訊息，判斷程式邏輯錯誤或部署問題的根源。", inputPlaceholder: "例如：Pod 狀態 OOMKilled，錯誤訊息：Memory exceeded" }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是 BSS/CRM 系統專家。指令：根據客服轉來的系統操作客訴 [使用者輸入關鍵字/參數]，分析後端可能涉及的軟體模組與資料查詢路徑。", inputPlaceholder: "例如：客戶無法變更資費方案的系統操作客訴" },
-            // 佔位符 (其餘 7 組)
-            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "...", inputPlaceholder: "..." }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "...", inputPlaceholder: "..." }]},
+            { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是 API 服務設計師。指令：為 [使用者輸入關鍵字/參數] 服務設計一份符合 RESTful 規範的 API 文件大綱，包含版本控制和錯誤碼定義。", inputPlaceholder: "例如：電信用戶帳單查詢服務" }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是數據庫優化專家。指令：針對 [使用者輸入關鍵字/參數] 的高負載查詢，提供索引優化建議和資料庫分片策略。", inputPlaceholder: "例如：高併發的即時流量計費系統" }, { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是軟體測試專家。指令：為 [使用者輸入關鍵字/參數] 設計一套涵蓋單元測試、整合測試和負載測試的完整測試計畫。", inputPlaceholder: "例如：新發布的 App 登入模組" }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是 Java/Spring Boot 性能調優專家。指令：分析 [使用者輸入關鍵字/參數] 的 GC 日誌和 Thread Dump，找出記憶體洩漏或死鎖問題。", inputPlaceholder: "例如：高 CPU 使用率的 Java 應用程式日誌" }, { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是前端介面 (UI/UX) 專家。指令：分析 [使用者輸入關鍵字/參數] 的使用者行為數據，找出介面設計的痛點並提供優化建議。", inputPlaceholder: "例如：用戶在資費頁面停留時間過長" }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是系統維護協調員。指令：針對 [使用者輸入關鍵字/參數] 導致的服務中斷，撰寫一份對外溝通的系統修復進度報告。", inputPlaceholder: "例如：OSS 系統核心服務當機事件" }, { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是產品經理。指令：根據 [使用者輸入關鍵字/參數] 的功能客訴，撰寫一份需求變更 (Change Request) 提案大綱。", inputPlaceholder: "例如：用戶抱怨 App 無法儲存常用功能" }]},
             { domainId: 'AI_APPLICATIONS', domainName: 'AI 應用', color: 'bg-purple-500', icon: ICON.AI_APPLICATIONS, scenarios: [
                 { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是電信網路分析與機器學習工程師。指令：針對 [使用者輸入關鍵字/參數] 的預測性維護專案，設計數據採集與模型選擇的規劃大綱。", inputPlaceholder: "例如：基地台功率漂移的預測性維護專案" },
                 { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是 AI 故障診斷系統維護專家。指令：某 AI 異常偵測模型發出了 [使用者輸入關鍵字/參數] 的告警。判斷是網路問題、數據漂移還是模型誤判。", inputPlaceholder: "例如：AI 告警內容：特定區域 RSRP 數值低於平均 3 個標準差" },
                 { scenarioId: 'COMPLAINT', scenarioName: '客訴處理', promptTemplate: "角色：你是電信客服 Chatbot 調校與訓練專家。指令：根據對話記錄 [使用者輸入關鍵字/參數]，分析 Chatbot 的理解盲點，並建議新的訓練語料。", inputPlaceholder: "例如：用戶詢問「我的費率可以改嗎」但 Chatbot 回答「現在天氣很好」" },
-                // 佔位符 (保留 4 個通用佔位符)
                 { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是 AI 模型佈署專家。指令：評估在 [使用者輸入關鍵字/參數] 環境下，部署即時網路優化 AI 模型的最佳容器化策略，並提供資源配置建議。", inputPlaceholder: "例如：邊緣運算節點 (MEC) 上的模型部署" }, 
                 { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是 AI 數據治理專家。指令：針對 [使用者輸入關鍵字/參數] 的網路數據，設計一個完整的數據標註、清洗與脫敏的流程和工具清單。", inputPlaceholder: "例如：用戶行為分析數據 (CDR) 的數據治理流程" }, 
                 { scenarioId: 'DESIGN', scenarioName: '建置設計', promptTemplate: "角色：你是 AI 服務設計師。指令：針對 [使用者輸入關鍵字/參數]，設計一個新的電信 AI 加值服務的商業模式和技術可行性評估大綱。", inputPlaceholder: "例如：基於影像識別的智慧巡檢服務" }, 
                 { scenarioId: 'TROUBLESHOOTING', scenarioName: '障礙查修', promptTemplate: "角色：你是 AI 模型性能調校專家。指令：分析 [使用者輸入關鍵字/參數] 模型在生產環境的延遲與吞吐量指標，找出性能瓶頸並提出優化方案。", inputPlaceholder: "例如：Chatbot 回覆延遲超過 500ms 的性能報告" }, 
-                // 新增三個獨立 AI 應用範本 (佔位符 8, 9, 10)
-                { 
-                    scenarioId: 'AGENT_AUTO', 
-                    scenarioName: 'Agent 自動化', 
-                    promptTemplate: "角色：你是專精於電信維運 (AIOps) 的 AI Agent 設計師。指令：為 [使用者輸入關鍵字/參數] 任務設計一套可行的 Agent 流程與步驟分解，包含監控觸發與自動修復邏輯。", 
-                    inputPlaceholder: "例如：5G 站點 RSRP 異常漂移的 Agent 自動修復流程" 
-                },
-                { 
-                    scenarioId: 'MCP_PARAM', 
-                    scenarioName: 'MCP Server 參數', 
-                    promptTemplate: "角色：你是資深的電信雲 MCP (Managed Control Platform) 專家。指令：根據 [使用者輸入關鍵字/參數] 資訊，提供 MCP Server 的關鍵配置參數調整建議或疑難排解腳本。", 
-                    inputPlaceholder: "例如：分析 NFVO/VNFM 協同告警，提供 K8S 資源調度參數建議" 
-                },
-                { 
-                    scenarioId: 'OTHER_LLM', 
-                    scenarioName: '其他 LLM 應用', 
-                    promptTemplate: "角色：你是跨領域知識彙整專家。指令：比較 [使用者輸入關鍵字/參數] 這兩種 LLM 模型在電信應用中的優勢、限制與成本考量。", 
-                    inputPlaceholder: "例如：比較 Gemini 與 Llama3 在客服摘要系統中的表現" 
-                }
+                { scenarioId: 'AGENT_AUTO', scenarioName: 'Agent 自動化', promptTemplate: "角色：你是專精於電信維運 (AIOps) 的 AI Agent 設計師。指令：為 [使用者輸入關鍵字/參數] 任務設計一套可行的 Agent 流程與步驟分解，包含監控觸發與自動修復邏輯。", inputPlaceholder: "例如：5G 站點 RSRP 異常漂移的 Agent 自動修復流程" },
+                { scenarioId: 'MCP_PARAM', scenarioName: 'MCP Server 參數', promptTemplate: "角色：你是資深的電信雲 MCP (Managed Control Platform) 專家。指令：根據 [使用者輸入關鍵字/參數] 資訊，提供 MCP Server 的關鍵配置參數調整建議或疑難排解腳本。", inputPlaceholder: "例如：分析 NFVO/VNFM 協同告警，提供 K8S 資源調度參數建議" },
+                { scenarioId: 'OTHER_LLM', scenarioName: '其他 LLM 應用', promptTemplate: "角色：你是跨領域知識彙整專家。指令：比較 [使用者輸入關鍵字/參數] 這兩種 LLM 模型在電信應用中的優勢、限制與成本考量。", inputPlaceholder: "例如：比較 Gemini 與 Llama3 在客服摘要系統中的表現" }
             ]}
         ];
 
@@ -370,43 +348,42 @@
          */
         const handleTemplateSelection = (template) => {
             selectedTemplate = template;
-            // keywordsInput.value = ''; // 保持使用者輸入，僅在最終 prompt 中處理空值
+            
+            // *** 修改: 將完整的提示詞範本帶入關鍵字輸入框 (步驟 4) ***
+            keywordsInput.value = selectedTemplate.promptTemplate; 
+            // *************************************************
 
             // Show and populate the Template Detail area
             templateDetailWrapper.classList.remove('hidden');
+            // Template Detail Output 依然顯示參數範例
             templateDetailOutput.value = template.promptTemplate.replace(KEYWORD_PLACEHOLDER, `[${selectedTemplate.inputPlaceholder}]`); 
 
             keywordsWrapper.classList.remove('hidden');
             keywordsInput.placeholder = selectedTemplate.inputPlaceholder;
-            inputPlaceholderText.textContent = ` (範例: ${selectedTemplate.inputPlaceholder})`;
+            // 由於步驟 4 成為編輯器，此處文字改為引導編輯
+            inputPlaceholderText.textContent = ` (請編輯下方文字，替換 [使用者輸入關鍵字/參數] )`; 
 
             renderTemplateSelectButtons(selectedTemplate.scenarioId); 
             updateResults(); // 立即更新最終 Prompt 預覽
         };
 
         /**
-         * 生成通用提示詞 (修改此處以自動帶入範本)
+         * 生成通用提示詞 (從 keywordsInput 讀取並處理佔位符)
          */
         const generateBasePrompt = () => {
             if (!selectedTemplate) {
-                return ''; // No template selected yet
+                return ''; 
             }
             
-            const keywords = keywordsInput.value.trim();
-            let replacementText;
+            let prompt = keywordsInput.value.trim(); // Prompt 內容現在從步驟 4 輸入框讀取
+            
+            // 檢查原佔位符是否還存在
+            if (prompt.includes(KEYWORD_PLACEHOLDER)) {
+                // 如果存在，則替換為引導編輯的動態文字
+                prompt = prompt.replace(KEYWORD_PLACEHOLDER, DYNAMIC_PLACEHOLDER);
+            }
+            // 如果不存在，表示使用者已經輸入了關鍵字，直接回傳編輯後的 prompt
 
-            if (keywords !== '') {
-                // If keywords are entered, use them directly
-                replacementText = keywords;
-            } else {
-                // If keywords are empty, show a dynamic placeholder in the final prompt
-                replacementText = `[請在步驟 4 輸入您的關鍵字/參數]`; 
-            }
-            
-            let prompt = selectedTemplate.promptTemplate;
-            // Replace the placeholder with the determined text
-            prompt = prompt.replace(KEYWORD_PLACEHOLDER, replacementText);
-            
             return prompt;
         };
         
@@ -419,32 +396,43 @@
             LLM_CONFIG.forEach(llm => {
                 let finalUrl = '#';
                 let buttonClass = `${llm.color} relative`;
-                const isCursor = llm.llmId === 'CURSOR';
 
-                // 只有在 basePrompt 不為空且不包含我們的「未輸入」提示時才啟用按鈕
-                const isPromptComplete = basePrompt && !basePrompt.includes('[請在步驟 4 輸入您的關鍵字/參數]');
-
+                // 只有當 basePrompt 存在且不包含任何佔位符時，才啟用按鈕
+                const isPromptComplete = basePrompt && !basePrompt.includes(DYNAMIC_PLACEHOLDER);
+                
                 if (isPromptComplete) {
-                    // 如果有 Prompt，構造 URL
+                    // 如果 Prompt 已經完成，構造 URL
                     const tunedPrompt = `${llm.tuningInstruction}\n\n--- CORE TASK ---\n${basePrompt}`;
                     const encodedPrompt = encodeURIComponentWithNewlines(tunedPrompt);
                     let url = llm.baseUri;
                     const param = llm.promptParam || 'q';
                     
-                    if (llm.baseUri.includes('?') && llm.promptParam) { url = `${url}${encodedPrompt}`; } 
-                    else if (llm.baseUri.includes('?')) { url = `${url}${encodedPrompt}`; } 
-                    else if (llm.baseUri.endsWith('/') && !llm.promptParam) { url = `${url}${encodedPrompt}`; } 
-                    else if (llm.baseUri.includes('://')) { url = `${url}${encodedPrompt}`; } 
-                    else { url = `${url}?${param}=${encodedPrompt}`; }
-                    finalUrl = url;
+                    if (llm.llmId === 'CLAUDE' || llm.llmId === 'GEMINI') {
+                        // For models that often don't support direct URL query params for full prompt in all cases
+                        // We use the base URI and the user will manually paste, but we still make the button active.
+                        finalUrl = '#';
+                    } else if (llm.baseUri.includes('?')) { 
+                        url = `${url}&${param}=${encodedPrompt}`; 
+                        finalUrl = url;
+                    } else if (llm.promptParam) {
+                         url = `${url}?${param}=${encodedPrompt}`;
+                         finalUrl = url;
+                    } else { // Fallback for simple link structure
+                         finalUrl = `${url}${encodedPrompt}`;
+                    }
+                    
+                    if (llm.llmId === 'CLAUDE' || llm.llmId === 'GEMINI') {
+                         finalUrl = '#'; // Override to prevent complex URL issues, user must copy.
+                    }
+
                 } else {
-                    // 如果沒有 Prompt 或只包含 Placeholder，則顯示為禁用狀態
+                    // 禁用狀態
                     buttonClass += ' opacity-50 cursor-not-allowed';
                 }
                 
                 const buttonHtml = `
-                    <a href="${finalUrl}" target="${isCursor ? '_self' : '_blank'}" rel="noopener noreferrer" 
-                        ${!isPromptComplete ? 'onClick="event.preventDefault(); alert(\'請先完成領域、場景、範本選擇並在步驟 4 輸入關鍵字！\')"' : ''}>
+                    <a href="${finalUrl}" target="_blank" rel="noopener noreferrer" 
+                        ${!isPromptComplete ? 'onClick="event.preventDefault(); alert(\'請先替換步驟 4 中的 [使用者輸入關鍵字/參數]！\')"' : ''}>
                         <button class="w-full flex items-center justify-center p-3 text-white rounded-lg font-medium transition duration-150 ${buttonClass}">
                             ${getLucideIcon(llm.icon, 'w-5 h-5 mr-2')}
                             ${llm.llmName}
@@ -462,13 +450,14 @@
         const updateResults = () => {
             const basePrompt = generateBasePrompt();
             
-            basePromptOutput.value = basePrompt || "選擇領域、場景、範本並輸入關鍵字後，此處將顯示生成的提示詞...";
+            basePromptOutput.value = basePrompt || "選擇領域、場景、範本並編輯後，此處將顯示生成的提示詞...";
             
             // 隨時更新 LLM 按鈕狀態 (啟用/禁用)
             renderLLMButtons(basePrompt); 
             
             if (selectedTemplate && selectedDomain && selectedScenario) {
-                promptMetadata.textContent = `領域: ${selectedDomain.domainName} | 場景: ${selectedScenario.scenarioName} | 範本: ${selectedTemplate.scenarioName}`;
+                const templateIndex = selectedDomain.scenarios.filter(s => s.scenarioId === selectedScenario.scenarioId).findIndex(t => t === selectedTemplate) + 1;
+                promptMetadata.textContent = `領域: ${selectedDomain.domainName} | 場景: ${selectedScenario.scenarioName} | 範本: No.${templateIndex}`;
             } else {
                 promptMetadata.textContent = '';
             }
