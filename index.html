@@ -370,7 +370,7 @@
          */
         const handleTemplateSelection = (template) => {
             selectedTemplate = template;
-            // keywordsInput.value = ''; // 移除自動清空，保持使用者輸入，但我們會在 updateResults 中處理它
+            // keywordsInput.value = ''; // 保持使用者輸入，僅在最終 prompt 中處理空值
 
             // Show and populate the Template Detail area
             templateDetailWrapper.classList.remove('hidden');
@@ -381,7 +381,7 @@
             inputPlaceholderText.textContent = ` (範例: ${selectedTemplate.inputPlaceholder})`;
 
             renderTemplateSelectButtons(selectedTemplate.scenarioId); 
-            updateResults(); // Call updateResults to display the prompt immediately
+            updateResults(); // 立即更新最終 Prompt 預覽
         };
 
         /**
@@ -421,8 +421,10 @@
                 let buttonClass = `${llm.color} relative`;
                 const isCursor = llm.llmId === 'CURSOR';
 
-                if (basePrompt && !basePrompt.includes('[請在步驟 4 輸入您的關鍵字/參數]')) {
-                    // 只有在 basePrompt 不為空且不包含我們的「未輸入」提示時才啟用按鈕
+                // 只有在 basePrompt 不為空且不包含我們的「未輸入」提示時才啟用按鈕
+                const isPromptComplete = basePrompt && !basePrompt.includes('[請在步驟 4 輸入您的關鍵字/參數]');
+
+                if (isPromptComplete) {
                     // 如果有 Prompt，構造 URL
                     const tunedPrompt = `${llm.tuningInstruction}\n\n--- CORE TASK ---\n${basePrompt}`;
                     const encodedPrompt = encodeURIComponentWithNewlines(tunedPrompt);
@@ -442,7 +444,7 @@
                 
                 const buttonHtml = `
                     <a href="${finalUrl}" target="${isCursor ? '_self' : '_blank'}" rel="noopener noreferrer" 
-                        ${!basePrompt || basePrompt.includes('[請在步驟 4 輸入您的關鍵字/參數]') ? 'onClick="event.preventDefault(); alert(\'請先完成領域、場景、範本選擇並在步驟 4 輸入關鍵字！\')"' : ''}>
+                        ${!isPromptComplete ? 'onClick="event.preventDefault(); alert(\'請先完成領域、場景、範本選擇並在步驟 4 輸入關鍵字！\')"' : ''}>
                         <button class="w-full flex items-center justify-center p-3 text-white rounded-lg font-medium transition duration-150 ${buttonClass}">
                             ${getLucideIcon(llm.icon, 'w-5 h-5 mr-2')}
                             ${llm.llmName}
